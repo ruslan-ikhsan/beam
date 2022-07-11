@@ -34,6 +34,35 @@ function redraw_progress_bar { # int barsize, int base, int current, int top
     echo -n "] $current / $top " $'\r'
 }
 
+function check_absolute_links {
+  local env="$1"
+  local exception_link="$2"
+  local -n env_exception_links="$3"
+
+  echo "Checking $env links."
+  for external_link in "${external_links[@]}";
+  do
+  processed_external_link=`awk -F/ '{print $3}' <<<"$external_link"`
+    if [[ "$processed_external_link" == "$exception_link" ]];
+    then
+      env_exception_links+=("${external_link}")
+      echo "${external_link}"
+    fi
+  done
+}
+
+function report_absolute_links {
+  local -n env_exception_links="$1"
+  local env="$2"
+
+  if [[ ${#env_exception_links[@]} -ne 0 ]]; then
+      echo "Found ${#env_exception_links[@]} link(s) leading to $env site. Recommended to use relative links to Apache Beam website. Absolute links to Apache Beam $env website:"
+      printf '%s\n' ${env_exception_links[@]}
+  else
+      echo "No absolute $env links"
+  fi
+}
+
 if ! command -v lynx; then
     echo "This script requires lynx to work properly."
     echo
@@ -67,25 +96,54 @@ mapfile -t external_links < <(printf '%s\n' "${links[@]}" | grep "^https\?://" |
 echo "Found ${#links[@]} links including ${#external_links[@]} unique external links."
 
 echo "Checking links."
+prod_exception_links=()
+staging_exception_links=()
+check_absolute_links "production" "beam.apache.org" prod_exception_links
+check_absolute_links "staging" "apache-beam-website-pull-requests.storage.googleapis.com" staging_exception_links
+
+echo "Checking working links."
+verified_list="https://be.linkedin.com/in/mattcasters,https://be.linkedin.com/in/mattcasters,https://www.infoworld.com/article/3336072/infoworlds-2019-technology-of-the-year-award-winners.html,https://www.linkedin.com/company/apache-beam/,https://www.linkedin.com/company/beam-summit/,https://www.qwiklabs.com/focuses/1098?parent=catalog,https://www.ricardo.ch/,https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/,https://help.github.com/articles/securing-your-account-with-two-factor-authentication-2fa/,https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line,https://www.idginsiderpro.com/article/3336072/infoworlds-2019-technology-of-the-year-award-winners.html,https://www.artstation.com/jbruno https://www.linkedin.com/company/beam-summit/?viewAsMember=true,https://reporter.apache.org/addrelease.html?beam,https://repository.apache.org/content/repositories/orgapachebeam-NNNN/,https://www.meetup.com/Apache-Beam-Stockholm/,https://www.meetup.com/Apache-Beam-Stockholm/events/260634514,https://github.com/apache/beam/blob/master/sdks/go/pkg/beam/combine.go#L27,https://github.com/apache/beam/blob/master/sdks/go/pkg/beam/flatten.go,https://github.com/apache/beam/blob/master/sdks/go/pkg/beam/partition.go,https://github.com/apache/beam/blob/master/sdks/go/pkg/beam/pcollection.go#L39,https://github.com/apache/beam/blob/master/sdks/go/pkg/beam/pipeline.go#L62,https://github.com/apache/beam/blob/master/sdks/java/core/src/main/java/org/apache/beam/sdk/expansion/ExternalTransformRegistrar.java,https://github.com/apache/beam/blob/master/sdks/java/core/src/main/java/org/apache/beam/sdk/io/AvroSink.java,https://github.com/apache/beam/blob/master/sdks/java/core/src/main/java/org/apache/beam/sdk/io/CountingSource.java,https://github.com/apache/beam/blob/master/sdks/java/core/src/main/java/org/apache/beam/sdk/io/FileIO.java,ttps://github.com/apache/beam/blob/master/sdks/java/core/src/main/java/org/apache/beam/sdk/io/TextSink.java,https://github.com/apache/beam/blob/master/sdks/java/core/src/main/java/org/apache/beam/sdk/io/WriteFiles.java,https://github.com/apache/beam/blob/master/sdks/java/core/src/main/java/org/apache/beam/sdk/runners/PTransformMatcher.java,https://github.com/apache/beam/blob/master/sdks/java/core/src/main/java/org/apache/beam/sdk/runners/PTransformOverride.java,https://github.com/apache/beam/blob/master/sdks/java/core/src/main/java/org/apache/beam/sdk/runners/PTransformOverrideFactory.java,https://github.com/apache/beam/blob/master/sdks/java/core/src/main/java/org/apache/beam/sdk/testing/TestPipeline.java"
 invalid_links=()
-i=1
-for external_link in "${external_links[@]}"
-do
-    redraw_progress_bar 50 1 $i ${#external_links[@]}
 
-    if ! curl -sSfL --max-time 60 --connect-timeout 30 --retry 3 -4 "${external_link}" > /dev/null ; then
-        invalid_links+=("${external_link}")
-        echo "${external_link}"
-    fi
-    i=$((i+1))
-done
-# Clear line - hide progress bar
-echo -n -e "\033[2K"
+function handleUrls {
+  i=1
+  for external_link in "${external_links[@]}"
+  do
+      redraw_progress_bar 50 1 $i ${#external_links[@]}
 
+      curlResult=$(curl -sSfL --max-time 40 --connect-timeout 20 --retry 3 -4 "$external_link" 2>&1 > /dev/null) && status=$? || status=$?
+      if [ $status -ne 0 ] ; then
+          if [[ $curlResult =~ (error: )([0-9]{3}) ]]; then
+              error_code=${BASH_REMATCH[0]}
 
-if [[ ${#invalid_links[@]} -ne 0 ]]; then
-    echo "Found ${#invalid_links[@]} invalid links: "
-    printf '%s\n' "${invalid_links[@]}"
+              # Check if link is in verified_list
+              if [[ $verified_list =~ "$external_link" ]]; then
+                  continue
+              fi
+
+              invalid_links+=("${error_code} ${external_link}")
+              echo "${external_link}"
+          fi
+      fi
+      i=$((i+1))
+  done
+  # Clear line - hide progress bar
+  echo -n -e "\033[2K"
+}
+
+handleUrls
+
+report_absolute_links prod_exception_links "production"
+report_absolute_links staging_exception_links "staging"
+
+# Sort invalid links by error status
+IFS=$'\n'
+sorted_invalid_links=($(sort <<<"${invalid_links[*]}"));
+unset IFS
+
+if [[ ${#sorted_invalid_links[@]} -ne 0 ]]; then
+    echo "Found ${#sorted_invalid_links[@]} invalid links: "
+    printf '%s\n' "${sorted_invalid_links[@]}"
 else
     echo "All links work"
 fi
