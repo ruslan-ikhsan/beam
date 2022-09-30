@@ -332,8 +332,7 @@ class GrpcExampleClient implements ExampleClient {
       sdk: sdk,
       name: example.name,
       description: example.description,
-      // TODO(nausharipov): modify playground/api/api.proto
-      tags: [],
+      tags: example.tags,
       type: _exampleTypeFromString(example.type),
       path: example.cloudPath,
       contextLine: example.contextLine,
