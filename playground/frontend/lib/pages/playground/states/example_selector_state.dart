@@ -21,23 +21,25 @@ import 'package:playground_components/playground_components.dart';
 
 class ExampleSelectorState with ChangeNotifier {
   final PlaygroundController _playgroundController;
-  ExampleType _selectedFilterType;
   String _filterText;
   List<CategoryWithExamples> categories;
+  List<String> selectedTags = [];
 
   ExampleSelectorState(
     this._playgroundController,
     this.categories, [
-    this._selectedFilterType = ExampleType.all,
     this._filterText = '',
   ]);
 
-  ExampleType get selectedFilterType => _selectedFilterType;
-
   String get filterText => _filterText;
 
-  void setSelectedFilterType(ExampleType type) {
-    _selectedFilterType = type;
+  addSelectedTag(String tag) {
+    selectedTags.add(tag);
+    notifyListeners();
+  }
+
+  removeSelectedTag(String tag) {
+    selectedTags.remove(tag);
     notifyListeners();
   }
 
@@ -66,25 +68,27 @@ class ExampleSelectorState with ChangeNotifier {
   }
 
   List<ExampleBase> _sortCategoryExamples(List<ExampleBase> examples) {
-    final isAllFilterType = selectedFilterType == ExampleType.all;
-    final isFilterTextEmpty = filterText.isEmpty;
-    if (isAllFilterType && isFilterTextEmpty) {
+    if (selectedTags.isEmpty && filterText.isEmpty) {
       return examples;
     }
-    if (!isAllFilterType && isFilterTextEmpty) {
-      return sortExamplesByType(
-        examples,
-        selectedFilterType,
-      );
+    if (selectedTags.isNotEmpty && filterText.isEmpty) {
+      return sortExamplesByTags(examples);
     }
-    if (isAllFilterType && !isFilterTextEmpty) {
-      return sortExamplesByName(examples, filterText);
+    if (selectedTags.isEmpty && filterText.isNotEmpty) {
+      return sortExamplesByName(examples);
     }
-    final sorted = sortExamplesByType(
-      examples,
-      selectedFilterType,
-    );
-    return sortExamplesByName(sorted, filterText);
+    final sorted = sortExamplesByTags(examples);
+    return sortExamplesByName(sorted);
+  }
+
+  List<ExampleBase> sortExamplesByTags(List<ExampleBase> examples) {
+    List<ExampleBase> sorted = [];
+    for (var example in examples) {
+      if (example.tags.toSet().containsAll(selectedTags)) {
+        sorted.add(example);
+      }
+    }
+    return sorted;
   }
 
   List<ExampleBase> sortExamplesByType(
@@ -94,13 +98,10 @@ class ExampleSelectorState with ChangeNotifier {
     return examples.where((element) => element.type == type).toList();
   }
 
-  List<ExampleBase> sortExamplesByName(
-    List<ExampleBase> examples,
-    String name,
-  ) {
+  List<ExampleBase> sortExamplesByName(List<ExampleBase> examples) {
     return examples
         .where((example) =>
-            example.name.toLowerCase().contains(name.toLowerCase()))
+            example.name.toLowerCase().contains(filterText.toLowerCase()))
         .toList();
   }
 }

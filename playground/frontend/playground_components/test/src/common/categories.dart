@@ -18,8 +18,7 @@
 
 import 'dart:collection';
 
-import 'package:playground_components/src/models/category_with_examples.dart';
-import 'package:playground_components/src/models/sdk.dart';
+import 'package:playground_components/playground_components.dart';
 
 import 'examples.dart';
 
@@ -34,7 +33,7 @@ final sortedCategories = [
 
 const unsortedExamples = [exampleMock1, exampleMock2];
 
-const examplesSortedByTypeMock = [exampleMock2];
+const examplesSortedByTagsMock = [exampleMock2];
 
 const examplesSortedByNameMock = [exampleMock1];
 

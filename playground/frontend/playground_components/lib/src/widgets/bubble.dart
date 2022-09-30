@@ -17,9 +17,9 @@
  */
 
 import 'package:flutter/material.dart';
-import 'package:playground_components/playground_components.dart';
+import '../../playground_components.dart';
 
-import '../constants/sizes.dart';
+const _kCenterWidthFactor = 1.0;
 
 class BubbleWidget extends StatelessWidget {
   final bool isSelected;
@@ -52,6 +52,7 @@ class BubbleWidget extends StatelessWidget {
               borderRadius: BorderRadius.circular(BeamBorderRadius.infinite),
             ),
             child: Center(
+              widthFactor: _kCenterWidthFactor,
               child: Text(
                 title,
                 style: TextStyle(

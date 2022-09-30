@@ -49,26 +49,9 @@ void main() {
   });
 
   test(
-    'ExampleSelector state selectedFilterType should be ExampleType.all by default',
-    () {
-      expect(state.selectedFilterType, ExampleType.all);
-    },
-  );
-
-  test(
     'ExampleSelector state filterText should be empty string by default',
     () {
       expect(state.filterText, '');
-    },
-  );
-
-  test(
-    'ExampleSelector state should notify all listeners about filter type change',
-    () {
-      state.addListener(() {
-        expect(state.selectedFilterType, ExampleType.example);
-      });
-      state.setSelectedFilterType(ExampleType.example);
     },
   );
 
@@ -105,8 +88,8 @@ void main() {
   });
 
   test(
-      'ExampleSelector state sortExamplesByType should:'
-      '- update categories,'
+      'ExampleSelector state sortExamplesByTags should:'
+      '- return examples which contain all selected tags'
       '- notify all listeners,'
       'but should NOT:'
       '- affect Example state categories', () {
@@ -114,16 +97,16 @@ void main() {
       playgroundController,
       categoriesMock,
     );
-    state.addListener(() {
-      expect(state.categories, examplesSortedByTypeMock);
-      expect(exampleCache.categoryListsBySdk, exampleCache.categoryListsBySdk);
-    });
-    state.sortExamplesByType(unsortedExamples, ExampleType.kata);
+    state.addSelectedTag('Kata');
+    expect(
+      state.sortExamplesByTags(unsortedExamples),
+      examplesSortedByTagsMock,
+    );
   });
 
   test(
       'ExampleSelector state sortExamplesByName should:'
-      '- update categories'
+      '- return examples with matching names'
       '- notify all listeners,'
       'but should NOT:'
       '- wait for full name of example,'
@@ -133,10 +116,10 @@ void main() {
       playgroundController,
       categoriesMock,
     );
-    state.addListener(() {
-      expect(state.categories, examplesSortedByNameMock);
-      expect(exampleCache.categoryListsBySdk, exampleCache.categoryListsBySdk);
-    });
-    state.sortExamplesByName(unsortedExamples, 'X1');
+    state.setFilterText('X1');
+    expect(
+      state.sortExamplesByName(unsortedExamples),
+      examplesSortedByNameMock,
+    );
   });
 }

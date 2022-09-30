@@ -22,12 +22,10 @@ import 'package:playground_components/playground_components.dart';
 import 'package:provider/provider.dart';
 
 class CategoryBubble extends StatelessWidget {
-  final ExampleType type;
   final String name;
 
   const CategoryBubble({
     Key? key,
-    required this.type,
     required this.name,
   }) : super(key: key);
 
@@ -35,14 +33,17 @@ class CategoryBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ExampleSelectorState>(
       builder: (context, state, child) {
-        final isSelected = type == state.selectedFilterType;
+        final isSelected = state.selectedTags.contains(name);
 
         return BubbleWidget(
           isSelected: isSelected,
           title: name,
           onTap: () {
-            if (!isSelected) {
-              state.setSelectedFilterType(type);
+            if (isSelected) {
+              state.removeSelectedTag(name);
+              state.sortCategories();
+            } else {
+              state.addSelectedTag(name);
               state.sortCategories();
             }
           },
