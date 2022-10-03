@@ -90,6 +90,7 @@ double (<code>"</code>) quotation marks, or <em>triple-quoted</em> with groups o
 
 <p><strong>Quoted literals:</strong></p>
 
+<div class="table-container-wrapper">
 {{< table >}}
 <table>
 <thead>
@@ -118,6 +119,7 @@ double (<code>"</code>) quotation marks, or <em>triple-quoted</em> with groups o
 </tbody>
 </table>
 {{< /table >}}
+</div>
 
 <p>Prefix characters (<code>r</code>, <code>R</code>, <code>b</code>, <code>B)</code> are optional for quoted or triple-quoted strings, and indicate that the string is a raw/regex string or a byte sequence, respectively. For
 example, <code>b'abc'</code> and <code>b'''abc'''</code> are both interpreted as type bytes. Prefix characters are case insensitive.</p>
@@ -127,6 +129,7 @@ example, <code>b'abc'</code> and <code>b'''abc'''</code> are both interpreted as
 <p>The table below lists all valid escape sequences for representing non-alphanumeric characters in string literals.
 Any sequence not in this table produces an error.</p>
 
+<div class="table-container-wrapper">
 {{< table >}}
 <table>
 <thead>
@@ -194,15 +197,16 @@ Any sequence not in this table produces an error.</p>
 </tr>
 <tr>
 <td><code>\uhhhh</code></td>
-<td>Unicode escape, with lowercase 'u' and exactly four hex digits. Valid only in string literals or identifiers.<br/>Note that the range D800-DFFF is not allowed, as these are surrogate unicode values.</td>
+<td>Unicode escape, with lowercase 'u' and exactly four hex digits. Valid only in string literals or identifiers.Note that the range D800-DFFF is not allowed, as these are surrogate unicode values.</td>
 </tr>
 <tr>
 <td><code>\Uhhhhhhhh</code></td>
-<td>Unicode escape, with uppercase 'U' and exactly eight hex digits. Valid only in string literals or identifiers.<br/>Note that the range D800-DFFF is not allowed, as these are surrogate unicode values. Also, values greater than 10FFFF are not allowed.</td>
+<td>Unicode escape, with uppercase 'U' and exactly eight hex digits. Valid only in string literals or identifiers.Note that the range D800-DFFF is not allowed, as these are surrogate unicode values. Also, values greater than 10FFFF are not allowed.</td>
 </tr>
 </tbody>
 </table>
 {{< /table >}}
+</div>
 
 <p><a id="integer_literals"></a></p>
 
@@ -341,6 +345,7 @@ TIMESTAMP '2014-09-27 12:30:00 America/Argentina/Buenos_Aires'</code></pre>
 
 <p>Beam SQL follows these rules for case sensitivity:</p>
 
+<div class="table-container-wrapper">
 {{< table >}}
 <table>
 <thead>
@@ -399,6 +404,7 @@ TIMESTAMP '2014-09-27 12:30:00 America/Argentina/Buenos_Aires'</code></pre>
 </tbody>
 </table>
 {{< /table >}}
+</div>
 
 <p><a id="reserved_keywords"></a></p>
 
@@ -414,117 +420,158 @@ language, and  have the following characteristics:</p>
 
 <p>Beam SQL has the following reserved keywords.</p>
 
+<div class="table-container-wrapper table--pm">
 {{< table >}}
-<table style="table-layout: fixed; width: 110%">
+<table style="width: 110%">
 <tbody>
 <tr>
-<td>
-ALL<br/>
-AND<br/>
-ANY<br/>
-ARRAY<br/>
-AS<br/>
-ASC<br/>
-ASSERT_ROWS_MODIFIED<br/>
-AT<br/>
-BETWEEN<br/>
-BY<br/>
-CASE<br/>
-CAST<br/>
-COLLATE<br/>
-CONTAINS<br/>
-CREATE<br/>
-CROSS<br/>
-CUBE<br/>
-CURRENT<br/>
-DEFAULT<br/>
-DEFINE<br/>
-DESC<br/>
-DISTINCT<br/>
-ELSE<br/>
-END<br/>
-</td>
-<td>
-ENUM<br/>
-ESCAPE<br/>
-EXCEPT<br/>
-EXCLUDE<br/>
-EXISTS<br/>
-EXTRACT<br/>
-FALSE<br/>
-FETCH<br/>
-FOLLOWING<br/>
-FOR<br/>
-FROM<br/>
-FULL<br/>
-GROUP<br/>
-GROUPING<br/>
-GROUPS<br/>
-HASH<br/>
-HAVING<br/>
-IF<br/>
-IGNORE<br/>
-IN<br/>
-INNER<br/>
-INTERSECT<br/>
-INTERVAL<br/>
-INTO<br/>
-</td>
-<td>
-IS<br/>
-JOIN<br/>
-LATERAL<br/>
-LEFT<br/>
-LIKE<br/>
-LIMIT<br/>
-LOOKUP<br/>
-MERGE<br/>
-NATURAL<br/>
-NEW<br/>
-NO<br/>
-NOT<br/>
-NULL<br/>
-NULLS<br/>
-OF<br/>
-ON<br/>
-OR<br/>
-ORDER<br/>
-OUTER<br/>
-OVER<br/>
-PARTITION<br/>
-PRECEDING<br/>
-PROTO<br/>
-RANGE<br/>
-</td>
-<td>
-RECURSIVE<br/>
-RESPECT<br/>
-RIGHT<br/>
-ROLLUP<br/>
-ROWS<br/>
-SELECT<br/>
-SET<br/>
-SOME<br/>
-STRUCT<br/>
-TABLESAMPLE<br/>
-THEN<br/>
-TO<br/>
-TREAT<br/>
-TRUE<br/>
-UNBOUNDED<br/>
-UNION<br/>
-UNNEST<br/>
-USING<br/>
-WHEN<br/>
-WHERE<br/>
-WINDOW<br/>
-WITH<br/>
-WITHIN<br/>
-</td>
+  <td>ALL</td>
+  <td>ENUM</td>
+  <td>IS</td>
+  <td>RECURSIVE</td>
+</tr>
+<tr>
+  <td>AND</td>
+  <td>ESCAPE</td>
+  <td>JOIN</td>
+  <td>RESPECT</td>
+</tr>
+<tr>
+  <td>ANY</td>
+  <td>EXCEPT</td>
+  <td>LATERAL</td>
+  <td>RIGHT</td>
+</tr>
+<tr>
+  <td>ARRAY</td>
+  <td>EXCLUDE</td>
+  <td>LEFT</td>
+  <td>ROLLUP</td>
+</tr>
+<tr>
+  <td>AS</td>
+  <td>EXISTS</td>
+  <td>LIKE</td>
+  <td>ROWS</td>
+</tr>
+<tr>
+  <td>ASC</td>
+  <td>EXTRACT</td>
+  <td>LIMIT</td>
+  <td>SELECT</td>
+</tr>
+<tr>
+  <td>ASSERT_ROWS_MODIFIED</td>
+  <td>FALSE</td>
+  <td>LOOKUP</td>
+  <td>SET</td>
+</tr>
+<tr>
+  <td>AT</td>
+  <td>FETCH</td>
+  <td>MERGE</td>
+  <td>SOME</td>
+</tr>
+<tr>
+  <td>BETWEEN</td>
+  <td>FOLLOWING</td>
+  <td>NATURAL</td>
+  <td>STRUCT</td>
+</tr>
+<tr>
+  <td>BY</td>
+  <td>FOR</td>
+  <td>NEW</td>
+  <td>TABLESAMPLE</td>
+</tr>
+<tr>
+  <td>CASE</td>
+  <td>FROM</td>
+  <td>NO</td>
+  <td>THEN</td>
+</tr>
+<tr>
+  <td>CAST</td>
+  <td>FULL</td>
+  <td>NOT</td>
+  <td>TO</td>
+</tr>
+<tr>
+  <td>COLLATE</td>
+  <td>GROUP</td>
+  <td>NULL</td>
+  <td>TREAT</td>
+</tr>
+<tr>
+  <td>CONTAINS</td>
+  <td>GROUPING</td>
+  <td>NULLS</td>
+  <td>TRUE</td>
+</tr>
+<tr>
+  <td>CREATE</td>
+  <td>GROUPS</td>
+  <td>OF</td>
+  <td>UNBOUNDED</td>
+</tr>
+<tr>
+  <td>CROSS</td>
+  <td>HASH</td>
+  <td>ON</td>
+  <td>UNION</td>
+</tr>
+<tr>
+  <td>CUBE</td>
+  <td>HAVING</td>
+  <td>OR</td>
+  <td>UNNEST</td>
+</tr>
+<tr>
+  <td>CURRENT</td>
+  <td>IF</td>
+  <td>ORDER</td>
+  <td>USING</td>
+</tr>
+<tr>
+  <td>DEFAULT</td>
+  <td>IGNORE</td>
+  <td>OUTER</td>
+  <td>WHEN</td>
+</tr>
+<tr>
+  <td>DEFINE</td>
+  <td>IN</td>
+  <td>OVER</td>
+  <td>WHERE</td>
+</tr>
+<tr>
+  <td>DESC</td>
+  <td>INNER</td>
+  <td>PARTITION</td>
+  <td>WINDOW</td>
+</tr>
+<tr>
+  <td>DISTINCT</td>
+  <td>INTERSECT</td>
+  <td>PRECEDING</td>
+  <td>WITH</td>
+</tr>
+<tr>
+  <td>ELSE</td>
+  <td>INTERVAL</td>
+  <td>PROTO</td>
+  <td>WITHIN</td>
+</tr>
+<tr>
+  <td>END</td>
+  <td>INTO</td>
+  <td>RANGE</td>
+  <td></td>
 </tr>
 </tbody>
 </table>
 {{< /table >}}
+</div>
 
 <p><a id="terminating_semicolons"></a></p>
 

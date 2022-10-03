@@ -105,3 +105,9 @@ $padding: 24px;
     @extend .table-bordered;
   }
 }
+
+.table--pm {
+  td:nth-child(n) {
+    padding: $padding !important;
+  }
+}
