@@ -59,7 +59,7 @@ class Example:
     """
     name: str
     complexity: str
-    sdk: Sdk
+    sdk: SDK_UNSPECIFIED
     filepath: str
     code: str
     status: STATUS_UNSPECIFIED
