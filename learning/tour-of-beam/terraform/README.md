@@ -1,4 +1,4 @@
-# GCP Cloud Functions back-end deployment using Terraform
+# (DRAFT) GCP Cloud Functions back-end deployment using Terraform
 
 This README will briefly guide you through the steps of how to use the script. It is pretty easy. 
 
