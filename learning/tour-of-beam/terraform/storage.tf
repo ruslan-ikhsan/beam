@@ -20,7 +20,7 @@
 #Generates archive of source code
 data "archive_file" "source" {
   type        = "zip"
-  source_dir  = "src"
+  source_dir  = "../backend"
   output_path = "/tmp/function.zip"
 }
 

@@ -25,18 +25,18 @@ variable "region" {
   description = "Location of App"
 }
 
-variable "cloud_function_name" {
-  description = "Name of cloud function"
-}
+#variable "cloud_function_name" {
+#  description = "Name of cloud function"
+#}
 
-variable "runtime_name" {
-  description = "Name of runtime (e.g. nodejs16, python39, dotnet3, go116, java11, ruby30, php74) see https://cloud.google.com/functions/docs/concepts/execution-environment#runtimes for more runtimes"
-}
+#variable "runtime_name" {
+#  description = "Name of runtime (e.g. nodejs16, python39, dotnet3, go116, java11, ruby30, php74) see https://cloud.google.com/functions/docs/concepts/execution-environment#runtimes for more runtimes"
+#}
 
-variable "code_function_name" {
-  description = "Name of function in code"
-}
+#variable "code_function_name" {
+#  description = "Name of function in code"
+#}
 
-variable "service_account_name" {
+variable "service_account_email" {
   description = "Name of the service account to run Cloud Function"
 }

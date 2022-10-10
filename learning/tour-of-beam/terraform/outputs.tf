@@ -17,6 +17,14 @@
 # under the License.
 #
 
-output "cloud_function_trigger_url" {
-  value = google_cloudfunctions_function.cloud_function.https_trigger_url
+output "cloud_function_trigger_url_1" {
+  value = google_cloudfunctions_function.backend_function_1.https_trigger_url
+}
+
+output "cloud_function_trigger_url_2" {
+  value = google_cloudfunctions_function.backend_function_2.https_trigger_url
+}
+
+output "cloud_function_trigger_url_3" {
+  value = google_cloudfunctions_function.backend_function_3.https_trigger_url
 }

@@ -14,11 +14,16 @@
 # limitations under the License.
 #
 
-resource "google_cloudfunctions_function" "cloud_function" {
-  name                  = var.cloud_function_name
-  runtime               = var.runtime_name
+provider "google" {
+  project = var.project_id
+  region = var.region
+}
+
+resource "google_cloudfunctions_function" "backend_function_1" {
+  name                  = "getSdkList-function"
+  runtime               = "go116"
   region                = var.region
-  service_account_email = google_service_account.sa_cloud_function.email
+  service_account_email = var.service_account_email
   ingress_settings      = "ALLOW_ALL"
   # Get the source code of the cloud function as a Zip compression
   source_archive_bucket = google_storage_bucket.function_bucket.name
@@ -26,7 +31,38 @@ resource "google_cloudfunctions_function" "cloud_function" {
 
   trigger_http = true
   # Name of the function that will be executed when the Google Cloud Function is triggered (def hello_gcs)
-  entry_point           = var.code_function_name
+  entry_point           = "getSdkList"
 
 }
 
+resource "google_cloudfunctions_function" "backend_function_2" {
+  name                  = "getContentTree-function"
+  runtime               = "go116"
+  region                = var.region
+  service_account_email = var.service_account_email
+  ingress_settings      = "ALLOW_ALL"
+  # Get the source code of the cloud function as a Zip compression
+  source_archive_bucket = google_storage_bucket.function_bucket.name
+  source_archive_object = google_storage_bucket_object.zip.name
+
+  trigger_http = true
+  # Name of the function that will be executed when the Google Cloud Function is triggered (def hello_gcs)
+  entry_point           = "getContentTree"
+
+}
+
+resource "google_cloudfunctions_function" "backend_function_3" {
+  name                  = "getUnitContent-function"
+  runtime               = "go116"
+  region                = var.region
+  service_account_email = var.service_account_email
+  ingress_settings      = "ALLOW_ALL"
+  # Get the source code of the cloud function as a Zip compression
+  source_archive_bucket = google_storage_bucket.function_bucket.name
+  source_archive_object = google_storage_bucket_object.zip.name
+
+  trigger_http = true
+  # Name of the function that will be executed when the Google Cloud Function is triggered (def hello_gcs)
+  entry_point           = "getUnitContent"
+
+}
