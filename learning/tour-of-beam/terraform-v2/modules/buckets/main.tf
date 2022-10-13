@@ -3,6 +3,7 @@ resource "google_storage_bucket" "bucket_for_function" {
   location      = var.location
   project       = var.project_id
   storage_class = "STANDARD"
+  force_destroy = true
 }
 
 resource "google_storage_bucket_object" "zip" {
