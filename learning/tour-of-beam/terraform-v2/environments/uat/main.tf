@@ -10,6 +10,7 @@ module "iam" {
   source = "../../modules/iam"
   project_id = var.project_id
   service_account_id = var.service_account
+  depends_on = [module.buckets]
 }
 
 module "buckets" {
@@ -20,4 +21,10 @@ module "buckets" {
 module "api_enable" {
   source = "../../modules/api_enable"
   project_id = var.project_id
+  depends_on = [module.buckets, module.iam]
+}
+
+module "cloud_functions" {
+  source = "../../modules/cloud_functions"
+  depends_on = [module.buckets, module.iam, module.api_enable]
 }

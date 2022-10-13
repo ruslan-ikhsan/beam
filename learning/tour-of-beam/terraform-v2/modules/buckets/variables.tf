@@ -1,7 +1,6 @@
 #Generates archive of source code
 variable "name" {
-  description = "Bucket name to store TF state"
-  default     = "tour-of-beam-backend-tfstate-bucket"
+  description = "Bucket name to store function source code"
 }
 
 variable "location" {
@@ -11,4 +10,10 @@ variable "location" {
 
 variable "project_id" {
   description = "Our GCP Project"
+}
+
+data "archive_file" "source" {
+  type        = "zip"
+  source_dir  = "../../../backend"
+  output_path = "/tmp/backend.zip"
 }
