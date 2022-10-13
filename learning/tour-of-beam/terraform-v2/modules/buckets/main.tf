@@ -1,9 +1,9 @@
-resource "google_storage_bucket" "tf_state_bucket" {
-  name          = var.name
-  location      = var.location
-  project       = var.project_id
-  storage_class = "STANDARD"
-}
+#resource "google_storage_bucket" "tf_state_bucket" {
+#  name          = var.name
+#  location      = var.location
+#  project       = var.project_id
+#  storage_class = "STANDARD"
+#}
 
 #resource "google_storage_bucket_object" "zip" {
 #  # Use an MD5 here. If there's no changes to the source code, this won't change either.
