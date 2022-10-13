@@ -1,4 +1,4 @@
-resource "google_service_account" "sa_cloud_function" {
+resource "google_service_account" "tourofbeam_cf_sa" {
   account_id   = var.service_account_id
   display_name = "Service Account to run Cloud Functions"
 }
@@ -9,6 +9,6 @@ resource "google_project_iam_member" "terraform_service_account_roles" {
     "roles/storage.objectCreator", "roles/iam.serviceAccountAdmin",
   ])
   role    = each.key
-  member  = "serviceAccount:${google_service_account.sa_cloud_function.email}"
+  member  = "serviceAccount:${google_service_account.tourofbeam_cf_sa.email}"
   project = var.project_id
 }
