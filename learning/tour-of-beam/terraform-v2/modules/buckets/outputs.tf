@@ -1,9 +1,9 @@
 output "functions-bucket-id" {
-  value = google_storage_bucket.bucket_for_function.id
+  value = google_storage_bucket.functions_bucket.id
 }
 
 output "functions-bucket-name" {
-  value = google_storage_bucket.bucket_for_function.name
+  value = google_storage_bucket.functions_bucket.name
 }
 
 output "function-bucket-object" {
