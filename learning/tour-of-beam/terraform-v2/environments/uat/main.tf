@@ -14,6 +14,6 @@ module "buckets" {
   source = "../../modules/buckets"
 }
 
-#module "api_enable" {
-#  source = "../../modules/api_enable"
-#}
+module "api_enable" {
+  source = "../../modules/api_enable"
+}
