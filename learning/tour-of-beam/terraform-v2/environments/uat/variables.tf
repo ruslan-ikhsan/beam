@@ -4,3 +4,5 @@ variable "bucket_name" {
 variable "project_id" {
   description = "Our GCP Project"
 }
+
+variable "service_account" {}
