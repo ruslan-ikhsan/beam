@@ -16,6 +16,7 @@ module "iam" {
 module "buckets" {
   source = "../../modules/buckets"
   project_id = var.project_id
+  bucket_name = var.bucket_name
 }
 
 module "api_enable" {
