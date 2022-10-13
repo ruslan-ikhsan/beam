@@ -27,5 +27,9 @@ module "api_enable" {
 
 module "cloud_functions" {
   source = "../../modules/cloud_functions"
+  region = var.region
+  project_id = var.project_id
+  bucket_name = var.bucket_name
+  service_account_id = var.service_account
   depends_on = [module.buckets, module.iam, module.api_enable]
 }
