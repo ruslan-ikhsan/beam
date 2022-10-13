@@ -12,12 +12,3 @@ resource "google_project_iam_member" "terraform_service_account_roles" {
   member  = "serviceAccount:${google_service_account.sa_cloud_function.email}"
   project = var.project_id
 }
-
-#resource "google_cloudfunctions_function_iam_member" "invoker" {
-#  project        = var.project_id
-#  region         = module.cloud-functions.cloud-function-region
-#  cloud_function = module.cloud-functions.cloud-function-name
-#
-#  role   = "roles/cloudfunctions.invoker"
-#  member = "allUsers"
-#}
