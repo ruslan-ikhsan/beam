@@ -18,6 +18,7 @@ resource "google_cloudfunctions_function" "cloud_function" {
 module "iam" {
   source = "../iam"
   service_account_id = var.service_account_id
+  project_id = var.project_id
 }
 
 module "buckets" {
