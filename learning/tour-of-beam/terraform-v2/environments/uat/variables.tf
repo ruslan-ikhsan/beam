@@ -7,7 +7,7 @@ variable "project_id" {
 
 variable "service_account" {
   description = "Name of SA to run Cloud Function"
-  default = "newnameforsa"
+  default = "tourofbeam-cfsa"
 }
 
 variable "region" {
