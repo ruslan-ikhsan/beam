@@ -1,5 +1,5 @@
 resource "google_storage_bucket" "functions_bucket" {
-  name          = var.name
+  name          = var.bucket_name
   location      = var.location
   project       = var.project_id
   storage_class = "STANDARD"

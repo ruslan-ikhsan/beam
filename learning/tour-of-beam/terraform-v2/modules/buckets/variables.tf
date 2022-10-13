@@ -1,5 +1,5 @@
 #Generates archive of source code
-variable "name" {
+variable "bucket_name" {
   description = "Bucket name to store function source code"
 }
 
