@@ -1,6 +1,6 @@
 terraform {
   backend "gcs" {
-    bucket = var.bucket_name
+    bucket = "tour-of-beam-backend-tfstate-bucket"
     prefix = "env/uat"
   }
 }
