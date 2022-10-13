@@ -6,3 +6,6 @@ variable "project_id" {
 }
 
 variable "service_account" {}
+variable "region" {
+  default = "europe-west1"
+}
