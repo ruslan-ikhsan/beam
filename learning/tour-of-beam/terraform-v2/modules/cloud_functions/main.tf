@@ -11,7 +11,7 @@ resource "google_cloudfunctions_function" "cloud_function" {
   trigger_http = true
   # Name of the function that will be executed when the Google Cloud Function is triggered
 
-  entry_point = "getContentTree"
+  entry_point = "sdkList"
 }
 
 # Create IAM entry so all users can invoke the function
