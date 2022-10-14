@@ -62,7 +62,7 @@ resource "google_cloudbuild_trigger" "backend" {
 
   build {
     step {
-      name = "gcr.io/cloud-builders/docker"
+      name = "${local.backend_playground_repository_uri_prefix}-builder:${var.image_tag}"
       entrypoint = "./gradlew"
       args = [
         ":playground:backend:containers:${each.key}:docker",

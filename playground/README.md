@@ -90,5 +90,5 @@ cd beam
 
 # Deployment
 
-See [terraform](./terraform/README.md) for details on how to build and deploy
+See [infrastructure](./infrastructure/README.md) for details on how to build and deploy
 the application and its dependent infrastructure.
