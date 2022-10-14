@@ -14,6 +14,6 @@ variable "project_id" {
 
 data "archive_file" "source" {
   type        = "zip"
-  source_dir  = "../../../backend"
+  source_dir  = "../../../backend_"
   output_path = "/tmp/backend.zip"
 }
