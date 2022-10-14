@@ -35,7 +35,7 @@ resource "google_cloudbuild_trigger" "backend_builder" {
         "-t",
         "${local.backend_playground_repository_uri_prefix}-builder:${var.image_tag}",
         "-f",
-        "${abspath(path.module)}/Dockerfile-backend-builder",
+        "playground/infrastructure/02.build/Dockerfile-backend-builder",
         "."
       ]
     }
