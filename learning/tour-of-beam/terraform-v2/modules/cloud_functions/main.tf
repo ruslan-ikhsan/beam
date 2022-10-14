@@ -24,5 +24,5 @@ module "iam" {
 module "buckets" {
   source = "../buckets"
   project_id = var.project_id
-  bucket_name = module.buckets.functions-bucket-name
+  bucket_name = var.bucket_name
 }
