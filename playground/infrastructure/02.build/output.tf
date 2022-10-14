@@ -20,7 +20,8 @@ output "next_step_custom_message_hack" {
 
 As a one-time setup,
 navigate to https://console.cloud.google.com/cloud-build/triggers?project=${var.project}
-and click `RUN` for each trigger.
+and click `RUN` for ${google_cloudbuild_trigger.backend_builder.name}
+and click `RUN` for each of the subsequent backend triggers.
 
 (Note: pushes to the branch will subsequently trigger the build automatically)
 
