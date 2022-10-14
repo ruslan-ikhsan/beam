@@ -18,6 +18,7 @@
 resource "google_project_service" "required_services" {
   for_each = toset([
     "artifactregistry",
+    "cloudbuild",
     "compute",
     "container",
     "redis",

@@ -15,15 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
-output "application_service_account" {
-  value = google_service_account.application
-}
-
 output "next_step_custom_message_hack" {
   value = <<EOF
 
-Navigate to https://console.cloud.google.com/cloud-build/triggers/connect?project=${var.project}
-to connect Cloud Build to your GitHub repository.
-(Note: skip where it asks you to create a trigger.)
+As a one-time setup,
+navigate to https://console.cloud.google.com/cloud-build/triggers?project=${var.project}
+and click `RUN` for each trigger.
+
+(Note: pushes to the branch will subsequently trigger the build automatically)
+
 EOF
 }

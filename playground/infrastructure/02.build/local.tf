@@ -14,3 +14,18 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+
+locals {
+  containers = {
+    backend = toset([
+      "go",
+      "java",
+      "python",
+      "router",
+      "scio",
+    ])
+  }
+  artifact_registry_docker_prefix = "${var.region}-docker.pkg.dev"
+  playground_repository_uri_prefix = "${local.artifact_registry_docker_prefix}/${var.project}/${var.artifact_registry_repository_id}"
+  backend_playground_repository_uri_prefix = "${local.playground_repository_uri_prefix}/backend"
+}

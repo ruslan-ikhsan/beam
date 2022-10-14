@@ -15,14 +15,19 @@
 # specific language governing permissions and limitations
 # under the License.
 
-resource "google_service_account" "service_account_iac" {
-  account_id = var.iac_service_account_id
-  display_name = var.iac_service_account_id
-  description = "The service account responsible for provisioning Google Cloud resources using Infrastructure-as-Code"
-}
-
-resource "google_service_account" "service_account_application" {
+resource "google_service_account" "application" {
   account_id = var.application_service_account_id
   display_name = var.application_service_account_id
   description = "The service account responsible for application workloads"
+}
+
+// Provision IAM roles to the Cloud Build service agent required to build and provision resources
+resource "google_project_iam_member" "cloud_build_roles" {
+  depends_on = [google_project_service.required_services]
+  for_each = toset([
+    "roles/artifactregistry.writer",
+  ])
+  role    = each.key
+  member  = "serviceAccount:${data.google_project.default.number}@cloudbuild.gserviceaccount.com"
+  project = var.project
 }

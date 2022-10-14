@@ -15,10 +15,15 @@
 # specific language governing permissions and limitations
 # under the License.
 
-output "service_account_iac" {
-  value = google_service_account.service_account_iac
+output "application_service_account" {
+  value = google_service_account.application
 }
 
-output "service_account_application" {
-  value = google_service_account.service_account_application
+output "next_step_custom_message_hack" {
+  value = <<EOF
+
+Navigate to https://console.cloud.google.com/cloud-build/triggers/connect?project=${var.project}
+to connect Cloud Build to your GitHub repository.
+(Note: skip where it asks you to create a trigger.)
+EOF
 }

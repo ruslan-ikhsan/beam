@@ -134,6 +134,8 @@ website/www/yarn-error.log
 **/*.tfstate.*
 **/*.hcl
 **/*.tfvars
+**/*.tfbackend
+!playground/infrastructure/backends/beta/state.tfbackend
 
 # Ignore Katas auto-generated files
 **/*-remote-info.yaml

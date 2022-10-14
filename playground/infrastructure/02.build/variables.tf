@@ -20,14 +20,35 @@ variable "project" {
   description = "The ID of the Google Cloud project within which resources are provisioned"
 }
 
-variable "iac_service_account_id" {
+variable "region" {
   type = string
-  description = "The ID of the service account responsible for provisioning Google Cloud resources using Infrastructure-as-Code"
-  default = "terraform"
+  description = "The Google Cloud Platform (GCP) region in which to provision resources"
+  default = "us-central1"
 }
 
-variable "application_service_account_id" {
+variable "github_repository_name" {
+  type        = string
+  description = "The name of the GitHub repository. For example the repository name for https://github.com/example/foo is 'foo'."
+}
+
+variable "github_repository_owner" {
+  type        = string
+  description = "Owner of the GitHub repository. For example the owner for https://github.com/example/foo is 'example'."
+}
+
+variable "github_repository_branch" {
+  type        = string
+  description = "The GitHub repository branch regex to match cloud build trigger"
+}
+
+variable "artifact_registry_repository_id" {
   type = string
-  description = "The ID of the service account responsible for application workloads"
+  description = "The ID of the Google Cloud Artifact Registry"
   default = "beam-playground"
+}
+
+variable "image_tag" {
+  type = string
+  description = "The tag to apply to image builds"
+  default = "latest"
 }
