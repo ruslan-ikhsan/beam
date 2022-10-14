@@ -10,8 +10,9 @@ resource "google_cloudfunctions_function" "cloud_function" {
   # Get the source code of the cloud function as a Zip compression
   trigger_http = true
   # Name of the function that will be executed when the Google Cloud Function is triggered
+  timeout = 500
 
-  entry_point = "sdkList"
+  entry_point = "FileTest"
 }
 
 # Create IAM entry so all users can invoke the function
