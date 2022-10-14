@@ -10,7 +10,13 @@ resource "google_cloudfunctions_function" "cloud_function" {
   # Get the source code of the cloud function as a Zip compression
   trigger_http = true
   # Name of the function that will be executed when the Google Cloud Function is triggered
-  entry_point = "sdkList"
+  entry_point = "getSdkList"
+
+  environment_variables = {
+    DATASTORE_PROJECT_ID="test-cloud-func-deploy"
+    TOB_MOCK=1
+  }
+
 }
 
 # Create IAM entry so all users can invoke the function
