@@ -28,6 +28,7 @@ resource "google_cloudbuild_trigger" "backend_builder" {
   // Disabled because we only want to run it manually
   disabled = true
   build {
+    timeout = "1800s"
     step {
       name = "gcr.io/cloud-builders/docker"
       args = [
@@ -43,6 +44,7 @@ resource "google_cloudbuild_trigger" "backend_builder" {
       local.backend_builder_uri,
     ]
   }
+
 }
 
 resource "google_cloudbuild_trigger" "backend" {
@@ -61,6 +63,7 @@ resource "google_cloudbuild_trigger" "backend" {
   ]
 
   build {
+    timeout = "1800s"
     step {
       name = local.backend_builder_uri,
       entrypoint = "gcloud"
