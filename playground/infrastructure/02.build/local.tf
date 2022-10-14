@@ -28,4 +28,5 @@ locals {
   artifact_registry_docker_prefix = "${var.region}-docker.pkg.dev"
   playground_repository_uri_prefix = "${local.artifact_registry_docker_prefix}/${var.project}/${var.artifact_registry_repository_id}"
   backend_playground_repository_uri_prefix = "${local.playground_repository_uri_prefix}/backend"
+  backend_builder_uri = "${local.backend_playground_repository_uri_prefix}-builder:${var.image_tag}"
 }

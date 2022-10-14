@@ -33,14 +33,14 @@ resource "google_cloudbuild_trigger" "backend_builder" {
       args = [
         "build",
         "-t",
-        "${local.backend_playground_repository_uri_prefix}-builder:${var.image_tag}",
+        local.backend_builder_uri,
         "-f",
         "playground/infrastructure/02.build/Dockerfile-backend-builder",
         "."
       ]
     }
     images = [
-      "${local.backend_playground_repository_uri_prefix}-builder:${var.image_tag}"
+      local.backend_builder_uri,
     ]
   }
 }
@@ -48,7 +48,7 @@ resource "google_cloudbuild_trigger" "backend_builder" {
 resource "google_cloudbuild_trigger" "backend" {
   for_each = local.containers.backend
   name = "build-backend-${each.key}"
-  description = "Builds the Beam Playground ${each.key} docker container. (Requires: ${local.backend_playground_repository_uri_prefix}-builder image)"
+  description = "Builds the Beam Playground ${each.key} docker container. (Requires: ${local.backend_builder_uri} image)"
   github {
     owner = var.github_repository_owner
     name  = var.github_repository_name
@@ -62,7 +62,16 @@ resource "google_cloudbuild_trigger" "backend" {
 
   build {
     step {
-      name = "${local.backend_playground_repository_uri_prefix}-builder:${var.image_tag}"
+      name = local.backend_builder_uri,
+      entrypoint = "gcloud"
+      args = [
+        "auth",
+        "configure-docker",
+        "${var.region}-docker.pkg.dev"
+      ]
+    }
+    step {
+      name = local.backend_builder_uri,
       entrypoint = "./gradlew"
       args = [
         ":playground:backend:containers:${each.key}:docker",
