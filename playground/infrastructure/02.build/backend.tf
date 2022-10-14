@@ -65,7 +65,7 @@ resource "google_cloudbuild_trigger" "backend" {
   build {
     timeout = "1800s"
     step {
-      name = local.backend_builder_uri,
+      name = local.backend_builder_uri
       entrypoint = "gcloud"
       args = [
         "auth",
@@ -74,7 +74,7 @@ resource "google_cloudbuild_trigger" "backend" {
       ]
     }
     step {
-      name = local.backend_builder_uri,
+      name = local.backend_builder_uri
       entrypoint = "./gradlew"
       args = [
         ":playground:backend:containers:${each.key}:docker",
