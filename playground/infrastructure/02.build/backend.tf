@@ -66,19 +66,14 @@ resource "google_cloudbuild_trigger" "backend" {
     timeout = "1800s"
     step {
       name = local.backend_builder_uri
-      entrypoint = "gcloud"
+      entrypoint = "docker"
       args = [
-        "auth",
-        "configure-docker",
-        "${var.region}-docker.pkg.dev"
-      ]
-    }
-    step {
-      name = local.backend_builder_uri
-      entrypoint = "./gradlew"
-      args = [
-        ":playground:backend:containers:${each.key}:docker",
-        "--stacktrace"
+        "build",
+        "-t",
+        "${local.backend_playground_repository_uri_prefix}-${each.key}:${var.image_tag}",
+        "-f",
+        "playground/backend/containers/${each.key}/Dockerfile",
+        "."
       ]
     }
     images = [
