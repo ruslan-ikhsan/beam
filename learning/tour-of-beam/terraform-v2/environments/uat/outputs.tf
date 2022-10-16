@@ -2,16 +2,16 @@ output "service-account-email" {
   value = module.iam.service-account-email
 }
 
-output "cloud-function-trigger-url" {
-  value = module.cloud_functions.cloud-function-trigger-url
+output "cloud-function-trigger-url1" {
+  value = module.cloud_functions.cloud-function-trigger-url1
 }
 
-output "cloud-function-name" {
-  value = module.cloud_functions.cloud-function-name
+output "cloud-function-trigger-url2" {
+  value = module.cloud_functions.cloud-function-trigger-url2
 }
 
-output "functions-bucket-id" {
-  value = module.buckets.functions-bucket-id
+output "cloud-function-trigger-url3" {
+  value = module.cloud_functions.cloud-function-trigger-url3
 }
 
 output "functions-bucket-name" {

@@ -6,7 +6,7 @@ resource "google_service_account" "tourofbeam_cf_sa" {
 resource "google_project_iam_member" "terraform_service_account_roles" {
   for_each = toset([
     "roles/resourcemanager.projectIamAdmin", "roles/cloudfunctions.admin", "roles/storage.objectViewer",
-    "roles/storage.objectCreator", "roles/iam.serviceAccountAdmin",
+    "roles/storage.objectCreator", "roles/iam.serviceAccountUser"
   ])
   role    = each.key
   member  = "serviceAccount:${google_service_account.tourofbeam_cf_sa.email}"
