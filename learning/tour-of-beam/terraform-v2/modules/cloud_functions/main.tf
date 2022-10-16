@@ -1,6 +1,6 @@
 resource "google_cloudfunctions_function" "cloud_function" {
   count                 = length(var.entry_point_names)
-  name                  = "tour-of-beam-backend-cloud-function-${count.index}"
+  name                  = "${var.entry_point_names[count.index]}"
   runtime               = "go116"
   project               = var.project_id
   service_account_email = var.service_account_id
