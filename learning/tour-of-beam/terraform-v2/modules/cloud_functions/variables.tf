@@ -5,5 +5,9 @@ variable "service_account_id" {
 }
 variable "bucket_name" {}
 variable "source_archive_bucket" {}
-
 variable "source_archive_object" {}
+
+variable "entry_point_names" {
+  type = list
+  default = ["getSdkList", "getContentTree", "getUnitContent"]
+}
