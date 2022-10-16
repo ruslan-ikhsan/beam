@@ -9,6 +9,10 @@ Prerequisites:
 - Existing service account with the following roles:
     - Cloud Functions Admin
     - Project IAM Admin
+    - Service Account Admin
+    - Service Account User
+    - Storage Admin
+    - Storage Object Admin
 - Exported JSON Key of service account above
 
 #### Configuring your environment
