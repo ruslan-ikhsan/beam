@@ -39,4 +39,7 @@ RUN flutter channel $channel
 
 RUN flutter upgrade
 
-ENTRYPOINT [ "flutter" ]
+# Install Docker
+# See: https://docs.docker.com/engine/install/ubuntu/#install-using-the-convenience-script
+RUN curl -fsSL https://get.docker.com -o get-docker.sh
+RUN sh ./get-docker.sh >/dev/null
