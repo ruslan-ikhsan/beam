@@ -16,7 +16,10 @@
 # limitations under the License.
 ###############################################################################
 
-FROM debian:stretch
+FROM gcr.io/cloud-builders/gcloud
+
+ENV FLUTTER_ROOT="/opt/flutter"
+ENV PATH="${FLUTTER_ROOT}/bin:${PATH}"
 
 RUN apt update -y
 RUN apt install -y \
@@ -28,10 +31,7 @@ RUN apt install -y \
   libglu1-mesa \
   default-jdk-headless
 
-ENV FLUTTER_ROOT="/opt/flutter"
 RUN git clone https://github.com/flutter/flutter "${FLUTTER_ROOT}"
-ENV PATH="${FLUTTER_ROOT}/bin:${PATH}"
-
 RUN flutter config  --no-analytics
 
 ARG channel=stable
