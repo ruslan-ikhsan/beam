@@ -23,13 +23,13 @@ COPY . /app
 WORKDIR /app
 
 RUN cd /app/playground_components &&\
-    flutter pub get -v &&\
-    flutter pub run build_runner build -v
+    flutter pub get &&\
+    flutter pub run build_runner build
 
 RUN cd /app &&\
-    flutter pub get -v &&\
-    flutter pub run build_runner build -v &&\
-    flutter build web -v
+    flutter pub get &&\
+    flutter pub run build_runner build &&\
+    flutter build web
 
 FROM nginx:1.21.3
 COPY --from=build /app/nginx_default.conf /etc/nginx/conf.d/default.conf

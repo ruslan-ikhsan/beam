@@ -16,7 +16,7 @@
 # limitations under the License.
 ###############################################################################
 
-FROM gcr.io/cloud-builders/gcloud
+FROM debian:stretch
 
 ENV FLUTTER_ROOT="/opt/flutter"
 ENV PATH="${FLUTTER_ROOT}/bin:${PATH}"
@@ -38,8 +38,4 @@ ARG channel=stable
 RUN flutter channel $channel
 
 RUN flutter upgrade
-
-# Install Docker
-# See: https://docs.docker.com/engine/install/ubuntu/#install-using-the-convenience-script
-RUN curl -fsSL https://get.docker.com -o get-docker.sh
-RUN sh ./get-docker.sh >/dev/null
+RUN flutter --version

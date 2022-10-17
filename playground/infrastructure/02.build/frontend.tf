@@ -69,7 +69,7 @@ resource "google_cloudbuild_trigger" "frontend" {
         "build",
         "-t",
         local.frontend_uri,
-        "--build-arg BUILDER=${local.frontend_builder_uri}",
+        "--build-arg=BUILDER=${local.frontend_builder_uri}",
         "."
       ]
     }
