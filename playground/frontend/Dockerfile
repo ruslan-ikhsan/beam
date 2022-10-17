@@ -16,7 +16,8 @@
 # limitations under the License.
 ###############################################################################
 
-FROM debian:11 as build
+ARG BUILDER=debian:11
+FROM $BUILDER as build
 
 COPY . /app
 WORKDIR /app

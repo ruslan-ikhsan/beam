@@ -63,11 +63,18 @@ resource "google_cloudbuild_trigger" "frontend" {
   build {
     timeout = "1800s"
     step {
-      name = local.frontend_builder_uri
-      entrypoint = "./gradlew"
+      name = "gcr.io/cloud-builders/docker"
+      dir = "playground/frontend"
       args = [
-        ":playground:frontend:docker"
+        "build",
+        "-t",
+        local.frontend_uri,
+        "--build-arg BUILDER=${local.frontend_builder_uri}",
+        "."
       ]
     }
+    images = [
+      local.frontend_uri,
+    ]
   }
 }
