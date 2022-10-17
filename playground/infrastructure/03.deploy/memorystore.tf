@@ -15,15 +15,18 @@
 # specific language governing permissions and limitations
 # under the License.
 
-resource "google_project_service" "required_services" {
-  for_each = toset([
-    "artifactregistry",
-    "cloudbuild",
-    "compute",
-    "container",
-    "redis",
-    "vpcaccess",
-  ])
-  service            = "${each.key}.googleapis.com"
-  disable_on_destroy = false
+resource "google_redis_instance" "cache" {
+  depends_on = [
+    google_service_networking_connection.private_service_connection,
+  ]
+  name           = var.application_name
+  region = var.region
+  display_name = var.application_name
+  memory_size_gb = var.memory_store_configuration.memory_size_gb
+  tier = var.memory_store_configuration.tier
+  replica_count = var.memory_store_configuration.replica_count
+  authorized_network = google_compute_network.default.name
+  redis_version = var.memory_store_configuration.redis_version
+  read_replicas_mode = var.memory_store_configuration.read_replicas_mode
+  connect_mode = "PRIVATE_SERVICE_ACCESS"
 }

@@ -15,15 +15,16 @@
 # specific language governing permissions and limitations
 # under the License.
 
-resource "google_project_service" "required_services" {
-  for_each = toset([
-    "artifactregistry",
-    "cloudbuild",
-    "compute",
-    "container",
-    "redis",
-    "vpcaccess",
+locals {
+  backends = toset([
+    "go",
+    "java",
+    "python",
+    "scio",
   ])
-  service            = "${each.key}.googleapis.com"
-  disable_on_destroy = false
+  artifact_registry_docker_prefix = "${var.region}-docker.pkg.dev"
+  playground_repository_uri_prefix = "${local.artifact_registry_docker_prefix}/${var.project}/${var.artifact_registry_repository_id}"
+  backend_playground_repository_uri_prefix = "${local.playground_repository_uri_prefix}/backend"
+  frontend_playground_repository_uri_prefix = "${local.playground_repository_uri_prefix}/frontend"
+  frontend_uri = "${local.frontend_playground_repository_uri_prefix}:${var.image_tag}"
 }

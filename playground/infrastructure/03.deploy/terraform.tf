@@ -15,15 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
-resource "google_project_service" "required_services" {
-  for_each = toset([
-    "artifactregistry",
-    "cloudbuild",
-    "compute",
-    "container",
-    "redis",
-    "vpcaccess",
-  ])
-  service            = "${each.key}.googleapis.com"
-  disable_on_destroy = false
+terraform {
+  backend "gcs" {
+    prefix = "deploy"
+  }
+  required_providers {
+    google = {
+      source = "hashicorp/google"
+      version = "~> 4.40.0"
+    }
+  }
 }

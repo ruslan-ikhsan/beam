@@ -15,15 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-resource "google_project_service" "required_services" {
-  for_each = toset([
-    "artifactregistry",
-    "cloudbuild",
-    "compute",
-    "container",
-    "redis",
-    "vpcaccess",
-  ])
-  service            = "${each.key}.googleapis.com"
-  disable_on_destroy = false
+// Queries the application service account
+data "google_service_account" "application" {
+  account_id = var.service_account_id
 }

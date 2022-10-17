@@ -15,15 +15,20 @@
 # specific language governing permissions and limitations
 # under the License.
 
-resource "google_project_service" "required_services" {
-  for_each = toset([
-    "artifactregistry",
-    "cloudbuild",
-    "compute",
-    "container",
-    "redis",
-    "vpcaccess",
-  ])
-  service            = "${each.key}.googleapis.com"
-  disable_on_destroy = false
+resource "google_cloud_run_service" "backend" {
+  for_each = local.backends
+  location = var.region
+  name     = "${var.application_name}-${each.key}"
+  template {
+    metadata {
+      annotations = {
+        "autoscaling.knative.dev/minScale"        = 1
+        "run.googleapis.com/vpc-access-connector" = google_vpc_access_connector.default.name
+        "run.googleapis.com/vpc-access-egress"    = "private-ranges-only"
+      }
+    }
+    spec {
+      service_account_name = data.google_service_account.application.email
+    }
+  }
 }

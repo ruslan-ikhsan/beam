@@ -19,4 +19,8 @@ executed within an automated process, though can be executed manually as well.
 
 ## 01.Setup
 
+TODO
 
+## 02.Build
+
+TODO
