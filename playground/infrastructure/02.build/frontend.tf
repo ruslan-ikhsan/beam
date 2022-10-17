@@ -15,9 +15,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
-resource "google_cloudbuild_trigger" "backend_builder" {
-  name = "backend-builder"
-  description = "Builds the base image used for Beam Playground backend builds"
+resource "google_cloudbuild_trigger" "frontend_builder" {
+  name = "frontend-builder"
+  description = "Builds the base image used for Beam Playground frontend builds"
   github {
     owner = var.github_repository_owner
     name  = var.github_repository_name
@@ -34,41 +34,14 @@ resource "google_cloudbuild_trigger" "backend_builder" {
       args = [
         "build",
         "-t",
-        local.backend_builder_uri,
+        local.frontend_builder_uri,
         "-f",
-        "playground/infrastructure/02.build/Dockerfile-backend-builder",
+        "playground/infrastructure/02.build/Dockerfile-frontend-builder",
         "."
       ]
     }
     images = [
-      local.backend_builder_uri,
+      local.frontend_builder_uri,
     ]
-  }
-}
-
-resource "google_cloudbuild_trigger" "backend" {
-  for_each = local.containers.backend
-  name = "build-backend-${each.key}"
-  description = "Builds the Beam Playground ${each.key} docker container. (Requires: ${local.backend_builder_uri} image)"
-  github {
-    owner = var.github_repository_owner
-    name  = var.github_repository_name
-    push {
-      branch = var.github_repository_branch
-    }
-  }
-  included_files = [
-    "playground/backend/**"
-  ]
-
-  build {
-    timeout = "1800s"
-    step {
-      name = local.backend_builder_uri
-      entrypoint = "./gradlew"
-      args = [
-        ":playground:backend:containers:${each.key}:docker"
-      ]
-    }
   }
 }
