@@ -45,3 +45,29 @@ resource "google_cloudbuild_trigger" "frontend_builder" {
     ]
   }
 }
+
+resource "google_cloudbuild_trigger" "frontend" {
+  name = "build-frontend"
+  description = "Builds the Beam Playground frontend docker container. (Requires: ${local.frontend_builder_uri} image)"
+  github {
+    owner = var.github_repository_owner
+    name  = var.github_repository_name
+    push {
+      branch = var.github_repository_branch
+    }
+  }
+  included_files = [
+    "playground/frontend/**"
+  ]
+
+  build {
+    timeout = "1800s"
+    step {
+      name = local.backend_builder_uri
+      entrypoint = "./gradlew"
+      args = [
+        ":playground:frontend:docker"
+      ]
+    }
+  }
+}
