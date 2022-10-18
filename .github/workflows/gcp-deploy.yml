@@ -1,6 +1,8 @@
 name: GCP Cloud Build
 
-job:
+on: workflow_dispatch
+
+jobs:
   job_id:
     name: Trigger Google Cloud Build
     runs-on: ubuntu-latest
