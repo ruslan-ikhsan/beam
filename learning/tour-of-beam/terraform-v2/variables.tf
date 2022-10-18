@@ -8,5 +8,5 @@ variable "service_account_id" {
   description = "Name of SA to run Cloud Function"
 }
 variable "region" {
-  default = "europe-west1"
+  default = "us-central1"
 }
