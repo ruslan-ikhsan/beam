@@ -22,8 +22,6 @@ steps:
         echo "***********************"
         echo "$BRANCH_NAME"
         echo "***********************"
-    options:
-      logging: 'CLOUD_LOGGING_ONLY'
 
   - id: 'tf init'
     name: 'hashicorp/terraform:1.3.1'
@@ -48,8 +46,6 @@ steps:
             cd ../../
           done
         fi
-    options:
-      logging: 'CLOUD_LOGGING_ONLY'
 
   # [START tf-plan]
   - id: 'tf plan'
@@ -75,8 +71,6 @@ steps:
             cd ../../
           done
         fi
-    options:
-      logging: 'CLOUD_LOGGING_ONLY'
   # [END tf-plan]
 
   # [START tf-apply]
@@ -94,6 +88,6 @@ steps:
           echo "Branch '$BRANCH_NAME' does not represent an official environment."
           echo "*******************************************************************************"
         fi
-    options:
-      logging: 'CLOUD_LOGGING_ONLY'
 # [END tf-apply]
+options:
+  logging: CLOUD_LOGGING_ONLY
