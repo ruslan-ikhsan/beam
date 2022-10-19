@@ -1,3 +1,7 @@
+locals {
+  env = "uat"
+}
+
 provider "google" {
   project = var.project_id
 }
