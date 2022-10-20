@@ -1,8 +1,8 @@
 variable "project_id" {
-  description = "Our GCP Project"
+  description = "The ID of the Google Cloud project within which resources are provisioned"
 }
 
 variable "service_account_id" {
-  description = "Name of SA to run Cloud Function"
+  description = "The ID of the service account responsible for running Google Cloud functions"
 }
 
