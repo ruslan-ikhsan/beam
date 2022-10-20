@@ -1,0 +1,12 @@
+terraform {
+  backend "gcs" {
+    bucket = "tour-of-beam-backend-tfstate-bucket"
+    prefix = "terraform-state"
+  }
+  required_providers {
+    google = {
+      source = "hashicorp/google"
+      version = "~> 4.40.0"
+    }
+  }
+}

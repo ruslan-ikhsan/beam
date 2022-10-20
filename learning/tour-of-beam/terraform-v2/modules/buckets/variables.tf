@@ -1,15 +1,15 @@
 #Generates archive of source code
 variable "bucket_name" {
-  description = "Bucket name to store function source code"
+  description = "The bucket name to store functions' source code"
 }
 
 variable "location" {
-  description = "Cloud Functions Bucket Region"
-  default     = "europe-west1"
+  description = "Cloud Functions bucket Region"
+  default     = "us-central1"
 }
 
 variable "project_id" {
-  description = "Our GCP Project"
+  description = "The ID of the Google Cloud project within which resources are provisioned"
 }
 
 data "archive_file" "source" {
