@@ -12,8 +12,8 @@ variable "project_id" {
   description = "The ID of the Google Cloud project within which resources are provisioned"
 }
 
-data "archive_file" "source" {
+data "archive_file" "source_code" {
   type        = "zip"
-  source_dir  = "../../../backend"
+  source_dir  = "../backend"
   output_path = "/tmp/backend.zip"
 }
