@@ -18,19 +18,19 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
-      - '--tag=$LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
+      - '--tag=us-central1-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
       - '-f'
       - 'gha-cloudbuild/dockerfiles/Dockerfile-base-image-backend'
       - '.'
 
   # This step builds Beam Playground backend container for golang
-  - name: '$LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
+  - name: 'us-central1-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
     entrypoint: './gradlew'
     args:
       - ':playground:backend:containers:go:docker'
 
   # This step builds Beam Playground backend container for java
-  - name: '$LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
+  - name: 'us-central1-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
     entrypoint: './gradlew'
     args:
       - ':playground:backend:containers:java:docker'
@@ -39,4 +39,4 @@ substitutions:
   _ARTIFACT_REGISTRY_REPOSITORY_ID: playground_repository
 
 images:
-  - '$LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
