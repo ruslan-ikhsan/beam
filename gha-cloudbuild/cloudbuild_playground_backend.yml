@@ -61,4 +61,4 @@ substitutions:
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
 
-timeout: 1800s
+timeout: 180000s
