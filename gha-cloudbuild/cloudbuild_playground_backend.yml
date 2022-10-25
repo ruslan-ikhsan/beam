@@ -23,9 +23,6 @@ steps:
       - 'dockerfiles/Dockerfile-base-image-backend'
       - '.'
 
-images:
-  - '$LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
-
   # This step builds Beam Playground backend container for golang
   - name: '$LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
     entrypoint: './gradlew'
@@ -40,3 +37,6 @@ images:
 
 substitutions:
   _ARTIFACT_REGISTRY_REPOSITORY_ID: playground_repository
+
+images:
+  - '$LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
