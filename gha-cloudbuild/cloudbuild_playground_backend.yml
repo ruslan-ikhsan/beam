@@ -40,3 +40,7 @@ substitutions:
 
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/go:latest'
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/java:latest'
+
+timeout: 1800s
