@@ -18,20 +18,22 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
-      - '--tag=$LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID-builder:latest'
+      - '--tag=$LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
       - '-f'
       - 'dockerfiles/Dockerfile-base-image-backend'
       - '.'
-    images: ['$LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID-builder:latest']
+
+images:
+  - '$LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
 
   # This step builds Beam Playground backend container for golang
-  - name: '$LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID-builder:latest'
+  - name: '$LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
     entrypoint: './gradlew'
     args:
       - ':playground:backend:containers:go:docker'
 
   # This step builds Beam Playground backend container for java
-  - name: '$LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID-builder:latest'
+  - name: '$LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
     entrypoint: './gradlew'
     args:
       - ':playground:backend:containers:java:docker'
