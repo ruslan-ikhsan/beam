@@ -36,7 +36,7 @@ steps:
       - ':playground:backend:containers:java:docker'
 
 substitutions:
-  _ARTIFACT_REGISTRY_REPOSITORY_ID: playground_repository
+  _ARTIFACT_REGISTRY_REPOSITORY_ID: playground-repository
 
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
