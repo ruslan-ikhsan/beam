@@ -20,7 +20,7 @@ steps:
       - 'build'
       - '--tag=$LOCATION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
       - '-f'
-      - 'dockerfiles/Dockerfile-base-image-backend'
+      - 'gha-cloudbuild/dockerfiles/Dockerfile-base-image-backend'
       - '.'
 
   # This step builds Beam Playground backend container for golang
