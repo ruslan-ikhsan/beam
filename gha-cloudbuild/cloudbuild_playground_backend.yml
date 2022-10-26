@@ -14,51 +14,55 @@
 # limitations under the License.
 
 steps:
+
+  - name: 'golang'
+    args: ['./gradlew playground:backend:precommit']
   # This step builds the base image for Beam Playground backend builds
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'build'
-      - '--tag=us-central1-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
-      - '-f'
-      - 'gha-cloudbuild/dockerfiles/Dockerfile-base-image-backend'
-      - '.'
-
-  # This step builds Beam Playground backend container for golang
-  - name: 'us-central1-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
-    entrypoint: './gradlew'
-    args:
-      - ':playground:backend:containers:go:docker'
-
-  # This step builds Beam Playground backend container for java
-  - name: 'us-central1-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
-    entrypoint: './gradlew'
-    args:
-      - ':playground:backend:containers:java:docker'
-
-  # This step builds Beam Playground backend container for java
-  - name: 'us-central1-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
-    entrypoint: './gradlew'
-    args:
-      - ':playground:backend:containers:python:docker'
-
-
-  # This step builds Beam Playground backend container for java
-  - name: 'us-central1-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
-    entrypoint: './gradlew'
-    args:
-      - ':playground:backend:containers:router:docker'
-
-
-  # This step builds Beam Playground backend container for java
-  - name: 'us-central1-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
-    entrypoint: './gradlew'
-    args:
-      - ':playground:backend:containers:scio:docker'
-
-substitutions:
-  _ARTIFACT_REGISTRY_REPOSITORY_ID: playground-repository
-
-images:
-  - 'us-central1-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
-
-timeout: 3600s
+#  - name: 'gcr.io/cloud-builders/docker'
+#    args:
+#      - 'build'
+#      - '--tag=us-central1-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
+#      - '-f'
+#      - 'gha-cloudbuild/dockerfiles/Dockerfile-base-image-backend'
+#      - '.'
+#
+#  # This step builds Beam Playground backend container for golang
+#  - name: 'us-central1-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
+#    entrypoint: './gradlew'
+#    args:
+#      - ':playground:backend:containers:go:docker'
+#
+#  # This step builds Beam Playground backend container for java
+#  - name: 'us-central1-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
+#    entrypoint: './gradlew'
+#    args:
+#      - ':playground:backend:containers:java:docker'
+#
+#  # This step builds Beam Playground backend container for java
+#  - name: 'us-central1-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
+#    entrypoint: './gradlew'
+#    args:
+#      - ':playground:backend:containers:python:docker'
+#
+#
+#  # This step builds Beam Playground backend container for java
+#  - name: 'us-central1-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
+#    entrypoint: './gradlew'
+#    args:
+#      - ':playground:backend:containers:router:docker'
+#
+#
+#  # This step builds Beam Playground backend container for java
+#  - name: 'us-central1-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
+#    entrypoint: './gradlew'
+#    args:
+#      - ':playground:backend:containers:scio:docker'
+#
+#substitutions:
+#  _DOCKERTAG: ${GITHUB_SHA}
+#  _ARTIFACT_REGISTRY_REPOSITORY_ID: playground-repository
+#
+#images:
+#  - 'us-central1-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:latest'
+#
+#timeout: 3600s
