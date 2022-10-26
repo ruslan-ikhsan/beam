@@ -16,7 +16,7 @@
 steps:
 
   - name: 'golang'
-    args: ['./gradlew playground:backend:precommit']
+    args: ['./gradlew ../playground:backend:precommit']
   # This step builds the base image for Beam Playground backend builds
 #  - name: 'gcr.io/cloud-builders/docker'
 #    args:
