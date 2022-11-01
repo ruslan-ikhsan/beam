@@ -42,6 +42,9 @@ Beam can be used for data validation, data preprocessing and model deployment/in
 
 Data validation and preprocessing can be done in Beam by setting up data pipelines that transform your data and output metrics computed from your data. Beam has a rich set of [IO connectors](https://beam.apache.org/documentation/io/built-in/) for ingesting and writing data, which means you can easily integrate it with your existing filesystem, database or messaging queue. When developing your ML model, you can also first explore your data with the [Beam DataFrame API](https://beam.apache.org/documentation/dsls/dataframes/overview/) so that you can identify and implement the required preprocessing steps allowing you to iterate faster towards production. Another common pattern is that the steps executed during preprocessing need to also be applied before running inference, in which case you can use the same Beam implementation twice. Lastly, if you need to do post-processing after running inference, this can also be done as part of your model inference pipeline.
 
+Further reading:
+* [AI/ML pipelines in Beam: data processing](/documentation/ml/data-processing)
+
 ## Inference
 
 There are several ways to use and deploy your model:
@@ -58,5 +61,6 @@ In order to automate and track the AI/ML workflows throughout your project, you 
 ## Examples
 
 You can find examples of end-to-end AI/ML pipelines for several use cases:
-* [Multi model pipelines in Beam](/documentation/ml/multi-model-pipelines)
-* [Online Clustering in Beam](/documentation/ml/online-clustering)
+* [Multi model pipelines in Beam](/documentation/ml/multi-model-pipelines): explains how multi-model pipelines work and gives an overview of what you need to know to build one using the RunInference API.
+* [Online Clustering in Beam](/documentation/ml/online-clustering): demonstrates how to setup a realtime clustering pipeline that can read text from PubSub, convert the text into an embedding using a transformer based language model with the RunInference API, and cluster them using BIRCH with Stateful Processing.
+* [Anomaly Detection in Beam](/documentation/ml/anomaly-detection): demonstrates how to setup an anomaly detection pipeline that reads text from PubSub in real-time, and then detects anomaly using a trained HDBSCAN clustering model with the RunInference API.
