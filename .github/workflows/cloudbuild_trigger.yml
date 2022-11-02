@@ -26,7 +26,7 @@ jobs:
     - name: 'Start Google Cloud Build trigger'
       run: |
         export CLOUDSDK_CORE_DISABLE_PROMPTS=1
-        gcloud beta builds triggers run ${{ secrets.GCP_BUILD_STAGING_TRIGGER_ID }} --tag=${{ github.event.release.tag_name }}
+        gcloud beta builds triggers run ${{ secrets.GCP_BUILD_STAGING_TRIGGER_ID }}
         
   logs_tailing:
     name: Run logs tailing
@@ -54,4 +54,4 @@ jobs:
     - name: 'Start Google Cloud Build logging tailing'
       run: |
         export CLOUDSDK_PYTHON_SITEPACKAGES=1
-        gcloud alpha logging tail "resource.type=build and resource.labels.project_id=sandbox-playground-001"
+        gcloud alpha logging tail "resource.type=build"
