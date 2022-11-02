@@ -6,8 +6,30 @@ on:
     types: [published]
 
 jobs:
-  job_id:
+  run_cloud_build:
     name: Trigger Google Cloud Build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v0'
+      with:
+        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v0'
+
+    - name: 'Use gcloud CLI'
+      run: 'gcloud info'
+    
+    - name: 'Start Google Cloud Build trigger'
+      run: |
+        export CLOUDSDK_CORE_DISABLE_PROMPTS=1
+        gcloud beta builds triggers run ${{ secrets.GCP_BUILD_STAGING_TRIGGER_ID }} --tag=${{ github.event.release.tag_name }}
+        
+  logs_tailing:
+    name: Run logs tailing
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -25,18 +47,10 @@ jobs:
 
     - name: 'Set up Cloud SDK'
       uses: 'google-github-actions/setup-gcloud@v0'
-
-    - name: 'Use gcloud CLI'
-      run: 'gcloud info'
       
     - name: 'Install gcloud alpha'
       run: 'gcloud components install alpha'
 
-    - name: 'Start Google Cloud Build trigger'
-      run: |
-        export CLOUDSDK_CORE_DISABLE_PROMPTS=1
-        gcloud beta builds triggers run ${{ secrets.GCP_BUILD_STAGING_TRIGGER_ID }} --tag=${{ github.event.release.tag_name }}
-        
     - name: 'Start Google Cloud Build logging tailing'
       run: |
         export CLOUDSDK_PYTHON_SITEPACKAGES=1
