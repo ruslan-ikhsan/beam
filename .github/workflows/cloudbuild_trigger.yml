@@ -1,0 +1,57 @@
+name: GCP Cloud Build Trigger via GHA
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+jobs:
+  run_cloud_build:
+    name: Trigger Google Cloud Build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v0'
+      with:
+        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v0'
+
+    - name: 'Use gcloud CLI'
+      run: 'gcloud info'
+    
+    - name: 'Start Google Cloud Build trigger'
+      run: |
+        export CLOUDSDK_CORE_DISABLE_PROMPTS=1
+        gcloud beta builds triggers run ${{ secrets.GCP_BUILD_STAGING_TRIGGER_ID }}
+        
+  logs_tailing:
+    name: Run logs tailing
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+    - name: Install dependencies
+      run: 'pip3 install grpcio'
+
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v0'
+      with:
+        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v0'
+      
+    - name: 'Install gcloud alpha'
+      run: 'gcloud components install alpha'
+
+    - name: 'Start Google Cloud Build logging tailing'
+      run: |
+        export CLOUDSDK_PYTHON_SITEPACKAGES=1
+        gcloud alpha logging tail "resource.type=build"
