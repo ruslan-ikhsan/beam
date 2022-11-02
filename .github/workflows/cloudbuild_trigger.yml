@@ -1,6 +1,7 @@
 name: GCP Cloud Build Trigger via GHA
 
 on:
+  workflow_dispatch:
   release:
     types: [published]
 
