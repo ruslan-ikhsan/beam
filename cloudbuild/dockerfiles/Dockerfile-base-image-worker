@@ -18,7 +18,7 @@
 
 FROM gcr.io/google.com/cloudsdktool/google-cloud-cli
 
-ARG GO_VERSION=1.19.2
+ARG GO_VERSION=1.18
 ENV PATH="${PATH}:/usr/local/go/bin"
 
 RUN apt-get update >/dev/null

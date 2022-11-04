@@ -35,7 +35,7 @@ steps:
         'clusters',
         'get-credentials',
         'playground-backend',
-        '--region=us-central1'
+        '--region=$_REGION'
       ]
 
   - name: '$_REGION-docker.pkg.dev/$PROJECT_ID/$_ARTIFACT_REGISTRY_REPOSITORY_ID/backend-builder:worker'
