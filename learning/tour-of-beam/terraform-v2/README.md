@@ -1,19 +1,36 @@
-# [Tour of Beam] Deploying backend infrastructure as GCP Cloud Function with GCP, Terraform and Cloud Build
-This tutorial explains how to create Tour of Beam backend infrastructure as a GCP Cloud Functions using Infrastructure as a Code (IaC) and GitOps methodoliges.
+<!--
+Copyright 2022 Google LLC
 
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-### Deployment
-Prerequisites:
-- Active GCP project with billing enabled
-- Existing bucket to store Terraform state (name to be declared in backend.tf)
-- Existing service account with the following roles:
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+# Overview
+
+This project deploys backend infrastructure for Tour of Beam as GCP Cloud Functions using Terraform.
+
+# Requirements
+
+## Development requirements
+
+- [Active GCP project with billing enabled](https://developers.google.com/workspace/guides/create-project)
+- [Existing bucket to store Terraform state](https://cloud.google.com/storage/docs/creating-buckets)
+- [Existing service account with the following roles](https://cloud.google.com/iam/docs/creating-managing-service-accounts):
     - Cloud Functions Admin
     - Project IAM Admin
     - Service Account Admin
     - Service Account User
     - Storage Admin
     - Storage Object Admin
-- Exported JSON Key of service account above
 
 #### Configuring your environment
 
@@ -28,13 +45,14 @@ Steps below will:
 # Create environment directory per your requirements/policy
 mkdir environments/dev
 cd ../environments/dev
-# Import exported JSON Key using
-export GOOGLE_APPLICATION_CREDENTIALS = '..key path...'
+# Create new configuration to auth to GCP Project
+gcloud init
+# Acquire new user credentials to use for Application Default Credentials
+gcloud auth application-default login
 # Initiliaze and run terraform
 terraform init
 terraform plan
 terraform apply
-terraform destroy
 ```
 
 
