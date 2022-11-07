@@ -29,17 +29,6 @@ variable "service_account_id" {
   description = "The ID of the service account responsible for running Google Cloud functions"
 }
 
-variable "impersonated_account_id" {
-  description = "The ID of the impersonated service account that will run TF scripts to deploy infrastructure"
-}
-
 variable "region" {
   default = "us-central1"
-}
-
-data "google_service_account_access_token" "default" {
-  provider               	= google.impersonation
-  target_service_account 	= local.terraform_service_account
-  scopes                 	= ["userinfo-email", "cloud-platform"]
-  lifetime               	= "1200s"
 }
