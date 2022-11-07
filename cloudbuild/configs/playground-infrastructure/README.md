@@ -1,52 +1,60 @@
-# 
+## Overview
 
-**This README explains how to:**
-
-1. Enable Cloud Build in your GCP Project
-
-2. Connect Github repository to Cloud Build
+This directory holds Infrastructure-as-Code using terraform to set up cloud build service account and create a trigger
 
 
-### Before you begin
+## Requirements
 
-- Create GCP project
-    - [Create a project docs](https://cloud.google.com/apis/docs/getting-started#creating_a_google_project)
-- Enable billing for the project
-    - [Enable billing docs](https://cloud.google.com/apis/docs/getting-started#enabling_billing)
-- Enable Cloud Build API
-    - [Enable API docs](https://cloud.google.com/apis/docs/getting-started#enabling_apis)
-- Have your GitHub repository ready
+- Existing Google Cloud project with billing enabled
+- Existing Cloud Storage Bucket to save Terraform state
+- [Google Cloud SDK](https://cloud.google.com/sdk): gcloud init, gcloud auth, and gcloud auth application-default login
+- [Terraform](https://www.terraform.io/)
 
-## Enable Cloud Build and connect a GitHub Repository:
 
-To connect your GitHub repository to your Cloud Build:
+## Usage
 
-1. Open the Cloud Build, either from Navigation Menu on the left side or using search engine.
+Steps below labeled with (manual) are required to be performed once for each target Google Cloud project. Otherwise, the intent is for the module to be executed within an automated process, though can be executed manually as well.
 
-2. Open the Triggers page in the Cloud Build console. Select required GCP project in the top bar.
+### Commands to run the scripts:
 
-3. Click Connect repository on the top. Select GitHub (Cloud Build GitHub App), check the consent checkbox, and click Continue.
+```console
+# Create new configuration to auth to GCP Project
+foo@bar:~$ gcloud init
 
-4. In the pop-up that appears, select your GitHub username or organization.
+```
 
-5. Select one of the following options based on your business need:
+```console
+# Acquire new user credentials to use for Application Default Credentials
+foo@bar:~$ gcloud auth application-default login
 
-        a. All repositories - enable current and future GitHub repositories for access via the Cloud Build app
+```
 
-        b. Only select repositories - use the Select repositories drop-down to enable only specific repositories for access via the Cloud Build app.
+```console
+# Setup Cloud Build SA
+foo@bar:~$ cd 01.setup
+foo@bar:~$ terraform init
+foo@bar:~$ terraform plan
+foo@bar:~$ terraform apply
 
-6. Click Install to install the Cloud Build app.
+```
 
-7. After you have selected a project or created a new one, you will see the Connect repository panel.
+```console
+# Setup Cloud Build Trigger
+foo@bar:~$ cd 02.build
+foo@bar:~$ terraform init
+foo@bar:~$ terraform plan
+foo@bar:~$ terraform apply
 
-8. In the Select repository section, select the following fields:
+```
 
-* GitHub account: The GitHub account used to install the Cloud Build GitHub App. This field may be pre-selected for you.
 
-* Repository: The repositories you want to connect to Cloud Build.
+## 01.setup
 
-9. Once you have selected your GitHub account and repositories, read the consent disclaimer and select the checkbox next to proceed further.
+This directory creates service account that Cloud Build will use in its trigger to deploy Playground Infrastructure.
 
-10. Click Connect and Done.
+And assigns necessary IAM roles for that.
 
-You have now connected one or more GitHub repositories to your Cloud project and Cloud Build. 
+
+## 02.build
+
+This directory creates Cloud Build trigger that will run Cloud Build configuration file to deploy Playground Infrastructure.
