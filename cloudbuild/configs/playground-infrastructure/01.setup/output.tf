@@ -16,7 +16,11 @@
 # under the License.
 
 output "application_service_account" {
-  value = google_service_account.iac_service_account_id
+  value = google_service_account.cloudbuild_service_account_id
+}
+
+output "project_number" {
+  value = data.google_project.default.number
 }
 
 output "next_step_custom_message_hack" {

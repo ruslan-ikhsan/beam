@@ -16,7 +16,8 @@
 # under the License.
 
 resource "google_cloudbuild_trigger" "builder" {
-  name = "Playground-deployer"
+  name        = var.trigger_id
+  location    = var.region
   description = "Builds the base image and then runs Beam Playground deployment"
   github {
     owner = var.github_repository_owner

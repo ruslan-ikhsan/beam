@@ -15,19 +15,29 @@
 # specific language governing permissions and limitations
 # under the License.
 
-resource "google_service_account" "iac_service_account_id" {
-  account_id = var.iac_service_account_id
-  display_name = var.iac_service_account_id
+resource "google_service_account" "cloudbuild_service_account_id" {
+  account_id = var.cloudbuild_service_account_id
+  display_name = var.cloudbuild_service_account_id
   description = "The service account responsible for infrastructure spin up"
 }
 
 // Provision IAM roles to the IaC service account required to build and provision resources
 resource "google_project_iam_member" "cloud_build_roles" {
-  depends_on = [google_project_service.required_services]
   for_each = toset([
-    "roles/artifactregistry.writer",
+    "roles/appengine.appAdmin",
+    "roles/appengine.appCreator",
+    "roles/artifactregistry.admin",
+    "roles/redis.editor",
+    "roles/compute.admin",
+    "roles/iam.serviceAccountCreator",
+    "roles/container.admin",
+    "roles/servicemanagement.quotaAdmin",
+    "roles/iam.securityAdmin",
+    "roles/iam.serviceAccountUser",
+    "roles/datastore.indexAdmin",
+    "roles/storage.admin"
   ])
   role    = each.key
-  member  = "serviceAccount:${google_service_account.iac_service_account_id.email}"
+  member  = "serviceAccount:${google_service_account.cloudbuild_service_account_id.email}"
   project = var.project
 }

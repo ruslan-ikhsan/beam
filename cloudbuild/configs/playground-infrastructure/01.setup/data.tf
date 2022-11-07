@@ -17,5 +17,4 @@
 
 // Query current Google Cloud project metadata
 data "google_project" "default" {
-  depends_on = [google_project_service.required_services]
 }

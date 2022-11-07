@@ -41,12 +41,12 @@ variable "github_repository_branch" {
   description = "The GitHub repository branch regex to match cloud build trigger"
 }
 
-variable "artifact_registry_repository_id" {
-  type = string
-  description = "The ID of the Google Cloud Artifact Registry"
-}
-
 variable "image_tag" {
   type = string
   description = "The tag to apply to image builds"
+}
+
+variable "trigger_id" {
+  type = string
+  description = "The name of the trigger that will be created"
 }
