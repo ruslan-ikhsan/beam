@@ -23,10 +23,12 @@ steps:
       - |
         apt update > /dev/null
         apt install -y software-properties-common
+        add-apt-repository -y ppa:deadsnakes/ppa
         apt install -y python3.8
         cd playground/infrastructure
         pip install -r requirements.txt
         export \
+        DEBIAN_FRONTEND=noninteractive \
         BEAM_ROOT_DIR="../../" \
         SDK_CONFIG="../../playground/sdks.yaml" \
         BEAM_EXAMPLE_CATEGORIES="../categories.yaml" \
