@@ -95,7 +95,7 @@ execution engines and providing extensibility points for connecting to
 different technologies and user communities.
 '''
 
-RECOMMENDED_MIN_PIP_VERSION = '7.0.0'
+RECOMMENDED_MIN_PIP_VERSION = '19.3.0'
 try:
   _PIP_VERSION = get_distribution('pip').version
   if parse_version(_PIP_VERSION) < parse_version(RECOMMENDED_MIN_PIP_VERSION):
@@ -249,8 +249,7 @@ if __name__ == '__main__':
         'hdfs>=2.1.0,<3.0.0',
         'httplib2>=0.8,<0.21.0',
         'numpy>=1.14.3,<1.23.0',
-        # Tight bound since minor version releases caused breakages.
-        'objsize>=0.5.2,<0.6.0',
+        'objsize>=0.6.1,<0.7.0',
         'pymongo>=3.8.0,<4.0.0',
         'proto-plus>=1.7.1,<2',
         'pydot>=1.2.0,<2',
