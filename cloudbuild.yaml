@@ -33,7 +33,7 @@ steps:
         BEAM_CONCURRENCY=4
         for sdk in go java python; do
           export SDK=$sdk &&
-          export SERVER_ADDRESS=https://${SDK}.playground-uat.xyz &&
+          export SERVER_ADDRESS=https://$SDK.playground-uat.xyz &&
           python3 ci_cd.py --step ${_STEP} --sdk SDK_${SDK^^} --origin $_ORIGIN \
           --subdirs ${_SUBDIRS}
         done
