@@ -32,9 +32,9 @@ steps:
         BEAM_USE_WEBGRPC=yes \
         BEAM_CONCURRENCY=4
         for sdk in go java python; do
-          export SDK=$sdk &&
-          export SERVER_ADDRESS=https://$SDK.playground-uat.xyz &&
-          python3 ci_cd.py --step ${_STEP} --sdk SDK_${SDK^^} --origin $_ORIGIN \
+          export sdkname=$sdk &&
+          export SERVER_ADDRESS=https://sdkname.playground-uat.xyz &&
+          python3 ci_cd.py --step ${_STEP} --sdk SDK_${sdkname^^} --origin ${_ORIGIN} \
           --subdirs ${_SUBDIRS}
         done
 #        python3 ci_cd.py \
