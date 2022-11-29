@@ -22,6 +22,7 @@ steps:
       - '-c'
       - |
         apt update > /dev/null
+        apt install -y software-properties-common
         apt install -y python3.8
         cd playground/infrastructure
         pip install -r requirements.txt
