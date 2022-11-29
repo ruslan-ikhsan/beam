@@ -43,6 +43,7 @@ steps:
       - 'SDK=${_SDK}'
       - 'STEP=${_STEP}'
       - 'SUBDIRS=${_SUBDIRS}'
+      - 'GOOGLE_CLOUD_PROJECT=$PROJECT_ID'
 
 substitutions:
   _STEP: CD
