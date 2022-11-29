@@ -32,23 +32,21 @@ steps:
         BEAM_ROOT_DIR="../../" \
         SDK_CONFIG="../../playground/sdks.yaml" \
         BEAM_EXAMPLE_CATEGORIES="../categories.yaml" \
+        SERVER_ADDRESS="https://backend-${_SDK}-beta-dot-apache-beam-testing.appspot.com" \
         BEAM_USE_WEBGRPC=yes \
         BEAM_CONCURRENCY=4
-        for sdk in go java python; do
-          export sdkname=$sdk &&
-          export SERVER_ADDRESS=https://sdkname.playground-uat.xyz &&
-          python3 ci_cd.py --step ${_STEP} --sdk SDK_${sdkname^^} --origin ${_ORIGIN} \
-          --subdirs ${_SUBDIRS}
-        done
-#        python3 ci_cd.py \
-#        --step ${_STEP} \
-#        --sdk SDK_${_SDK} \
-#        --origin ${_ORIGIN} \
-#        --subdirs ${_SUBDIRS}
-#        done
+        python3 ci_cd.py --step ${_STEP} --sdk SDK_${_SDK} --origin ${_ORIGIN} \
+        --subdirs ${_SUBDIRS}
+
+    env:
+      - 'ORIGIN=${_ORIGIN}'
+      - 'SDK=${_SDK}'
+      - 'STEP=${_STEP}'
+      - 'SUBDIRS=${_SUBDIRS}'
 
 substitutions:
   _STEP: CD
+  _SDK: GO
   _ORIGIN: PG_EXAMPLES
   _SUBDIRS: "../../learning/katas ../../examples ../../sdks"
 
