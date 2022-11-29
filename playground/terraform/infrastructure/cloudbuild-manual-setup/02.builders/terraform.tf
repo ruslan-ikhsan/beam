@@ -17,11 +17,11 @@
 
 terraform {
   backend "gcs" {
-    prefix = "build"
+    prefix = "02.builders"
   }
   required_providers {
     google = {
-      source = "hashicorp/google"
+      source  = "hashicorp/google"
       version = "~> 4.40.0"
     }
   }

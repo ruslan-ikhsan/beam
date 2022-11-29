@@ -15,6 +15,22 @@
 # specific language governing permissions and limitations
 # under the License.
 
-// Query current Google Cloud project metadata
-data "google_project" "default" {
-}
+resource "google_cloudbuild_trigger" "builder" {
+  name        = var.trigger_id
+  project     = var.project_id
+  location    = var.region
+  description = "Builds the base image and then runs Beam Playground deployment"
+  github {
+    owner = var.github_repository_owner
+    name  = var.github_repository_name
+    push {
+      branch = var.github_repository_branch
+    }
+  }
+  // Disabled because we only want to run it manually
+  disabled = true
+
+  service_account = var.cloudbuild_sa_id
+  filename = "playground/infrastructure/cloudbuild/cloudbuild.yaml"
+
+  }

@@ -16,9 +16,9 @@
 # under the License.
 
 resource "google_service_account" "cloudbuild_service_account_id" {
-  account_id = var.cloudbuild_service_account_id
+  account_id   = var.cloudbuild_service_account_id
   display_name = var.cloudbuild_service_account_id
-  description = "The service account responsible for infrastructure spin up"
+  description  = "The service account cloud build will use to deploy Playground"
 }
 
 // Provision IAM roles to the IaC service account required to build and provision resources
@@ -27,7 +27,7 @@ resource "google_project_iam_member" "cloud_build_roles" {
     "roles/appengine.appAdmin",
     "roles/appengine.appCreator",
     "roles/artifactregistry.admin",
-    "roles/redis.editor",
+    "roles/redis.admin",
     "roles/compute.admin",
     "roles/iam.serviceAccountCreator",
     "roles/container.admin",
@@ -35,7 +35,8 @@ resource "google_project_iam_member" "cloud_build_roles" {
     "roles/iam.securityAdmin",
     "roles/iam.serviceAccountUser",
     "roles/datastore.indexAdmin",
-    "roles/storage.admin"
+    "roles/storage.admin",
+    "roles/logging.logWriter"
   ])
   role    = each.key
   member  = "serviceAccount:${google_service_account.cloudbuild_service_account_id.email}"

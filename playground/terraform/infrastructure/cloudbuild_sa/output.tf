@@ -15,20 +15,15 @@
 # specific language governing permissions and limitations
 # under the License.
 
-resource "google_cloudbuild_trigger" "builder" {
-  name        = var.trigger_id
-  location    = var.region
-  description = "Builds the base image and then runs Beam Playground deployment"
-  github {
-    owner = var.github_repository_owner
-    name  = var.github_repository_name
-    push {
-      branch = var.github_repository_branch
-    }
-  }
-  // Disabled because we only want to run it manually
-  disabled = true
+output "cloudbuild_sa_id" {
+  value = google_service_account.cloudbuild_service_account_id.id
+}
 
-  filename = "cloudbuild/configs/playground-infrastructure/cloudbuild.yaml"
+output "connect_githubrepo_to_cloudbuild" {
+  value = <<EOF
 
-  }
+Navigate to https://console.cloud.google.com/cloud-build/triggers/connect?project=${var.project_id}
+to connect Cloud Build to your GitHub repository.
+(Note: skip where it asks you to create a trigger.)
+EOF
+}

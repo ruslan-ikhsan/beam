@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-variable "project" {
+variable "project_id" {
   type = string
   description = "The ID of the Google Cloud project within which resources are provisioned"
 }
@@ -23,7 +23,10 @@ variable "project" {
 variable "region" {
   type = string
   description = "The Google Cloud Platform (GCP) region in which to provision resources"
-  default = "us-central1"
+}
+
+variable "cloudbuild_sa_id" {
+  description = "The ID of the cloud build service account responsible for provisioning Google Cloud resources"
 }
 
 variable "github_repository_name" {

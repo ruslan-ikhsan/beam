@@ -15,15 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-output "next_step_custom_message_hack" {
+output "using_triggers" {
   value = <<EOF
 
-As a one-time setup,
-navigate to https://console.cloud.google.com/cloud-build/triggers?project=${var.project}
-and click `RUN` for ${google_cloudbuild_trigger.builder.name}
-and click `RUN` for each of the subsequent backend triggers.
-
-(Note: pushes to the branch will subsequently trigger the build automatically)
+Further steps on how to run triggers described in README file.
+File located by `playground/terraform/infrastructure/cloudbuild-manual-setup/README.md`.
 
 EOF
 }

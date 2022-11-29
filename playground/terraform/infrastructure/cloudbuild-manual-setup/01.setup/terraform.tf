@@ -15,19 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
-output "application_service_account" {
-  value = google_service_account.cloudbuild_service_account_id
-}
-
-output "project_number" {
-  value = data.google_project.default.number
-}
-
-output "next_step_custom_message_hack" {
-  value = <<EOF
-
-Navigate to https://console.cloud.google.com/cloud-build/triggers/connect?project=${var.project}
-to connect Cloud Build to your GitHub repository.
-(Note: skip where it asks you to create a trigger.)
-EOF
+terraform {
+  backend "gcs" {
+    prefix = "01.setup"
+  }
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 4.40.0"
+    }
+  }
 }
