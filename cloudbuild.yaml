@@ -23,7 +23,7 @@ steps:
       - |
         apt update > /dev/null
         apt install -y software-properties-common > /dev/null
-        add-apt-repository -y ppa:deadsnakes/ppa && apt install python3.8
+        add-apt-repository -y ppa:deadsnakes/ppa && apt install python3.8 python3-pip
         cd playground/infrastructure
         pip install -r requirements.txt
         export \
