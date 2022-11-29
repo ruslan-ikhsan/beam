@@ -21,12 +21,13 @@ steps:
     args:
       - '-c'
       - |
-        apt update > /dev/null
+        apt-get update
         export DEBIAN_FRONTEND=noninteractive
-        apt install -y software-properties-common
-        add-apt-repository -y ppa:deadsnakes/ppa && apt install -y python3.8
+        apt-get install -y software-properties-common
+        add-apt-repository -y ppa:deadsnakes/ppa && apt update
+        apt install -y python3.8
         cd playground/infrastructure
-        yes | pip install -r requirements.txt
+        pip install -r requirements.txt
         export \
         BEAM_ROOT_DIR="../../" \
         SDK_CONFIG="../../playground/sdks.yaml" \
