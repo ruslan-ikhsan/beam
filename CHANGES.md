@@ -61,9 +61,12 @@
 * Support for Bigtable sink (Write and WriteBatch) added (Go) ([#23324](https://github.com/apache/beam/issues/23324)).
 * S3 implementation of the Beam filesystem (Go) ([#23991](https://github.com/apache/beam/issues/23991)).
 * Support for SingleStoreDB source and sink added (Java) ([#22617](https://github.com/apache/beam/issues/22617)).
+* Added support for DefaultAzureCredential authentication in Azure Filesystem (Python) ([#24210](https://github.com/apache/beam/issues/24210)).
 
 ## New Features / Improvements
 
+* Beam now provides a portable "runner" that can render pipeline graphs with
+  graphviz.  See `python -m apache_beam.runners.render --help` for more details.
 * Local packages can now be used as dependencies in the requirements.txt file, rather
   than requiring them to be passed separately via the `--extra_package` option
   (Python) ([#23684](https://github.com/apache/beam/pull/23684)).
@@ -78,6 +81,8 @@
   dependency of the Java SDK Harness. Some users of a portable runner (such as Dataflow Runner v2)
   may have an undeclared dependency on this package (for example using GCS with
   TextIO) and will now need to declare the dependency.
+* `beam-sdks-java-core` is no longer a dependency of the Java SDK Harness. Users of a portable
+  runner (such as Dataflow Runner v2) will need to provide this package and its dependencies.
 
 ## Deprecations
 
