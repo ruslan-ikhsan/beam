@@ -13,15 +13,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: networking.gke.io/v1
-kind: ManagedCertificate
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: {{ .Values.project_id }}
+  name: playground-scio
+  labels:
+    app: backend-scio
+    type: backend
 spec:
-  domains:
-    - go.{{ .Values.dns_name }}
-    - java.{{ .Values.dns_name }}
-    - scio.{{ .Values.dns_name }}
-    - python.{{ .Values.dns_name }}
-    - router.{{ .Values.dns_name }}
-    - {{ .Values.dns_name }}  
+  template:
+    metadata:
+     name: playground
+     labels:
+       app: backend-scio
+       type: backend
+    spec:
+     containers:
+     - name: playground-backend-scio
+       image: "{{ .Values.registry}}/{{ .Values.image.scio_image }}:{{ .Values.tag }}"
+       imagePullPolicy: {{ .Values.image.pullPolicy }}
+       env:
+       - name: CACHE_TYPE
+         value: "remote"
+       - name: CACHE_ADDRESS
+         value: {{ .Values.redis_ip }}
+  replicas: {{ .Values.replicaCount  }}
+  selector:
+    matchLabels:
+     app: backend-scio

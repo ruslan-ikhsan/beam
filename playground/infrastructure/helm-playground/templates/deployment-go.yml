@@ -13,15 +13,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: networking.gke.io/v1
-kind: ManagedCertificate
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: {{ .Values.project_id }}
+  name: playground-go
+  labels:
+    app: backend-go
+    type: backend
 spec:
-  domains:
-    - go.{{ .Values.dns_name }}
-    - java.{{ .Values.dns_name }}
-    - scio.{{ .Values.dns_name }}
-    - python.{{ .Values.dns_name }}
-    - router.{{ .Values.dns_name }}
-    - {{ .Values.dns_name }}  
+  template:
+    metadata:
+     name: playground
+     labels:
+       app: backend-go
+       type: backend
+    spec:
+     containers:
+     - name: playground-backend-go
+       image: "{{ .Values.registry}}/{{ .Values.image.go_image }}:{{ .Values.tag }}"
+       imagePullPolicy: {{ .Values.image.pullPolicy }}
+       ports:
+        - containerPort: 8080
+       env:
+         - name: CACHE_TYPE
+           value: "remote"
+         - name: CACHE_ADDRESS
+           value: {{ .Values.redis_ip }}
+  replicas: {{ .Values.replicaCount  }}
+  selector:
+    matchLabels:
+     app: backend-go

@@ -1,3 +1,4 @@
+
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -13,15 +14,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: networking.gke.io/v1
-kind: ManagedCertificate
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: {{ .Values.project_id }}
+  name: playground-python
+  labels:
+    app: backend-python
+    type: backend
 spec:
-  domains:
-    - go.{{ .Values.dns_name }}
-    - java.{{ .Values.dns_name }}
-    - scio.{{ .Values.dns_name }}
-    - python.{{ .Values.dns_name }}
-    - router.{{ .Values.dns_name }}
-    - {{ .Values.dns_name }}  
+  template:
+    metadata:
+     name: playground
+     labels:
+       app: backend-python
+       type: backend
+    spec:
+     containers:
+     - name: playground-backend-python
+       image: "{{ .Values.registry}}/{{ .Values.image.python_image }}:{{ .Values.tag }}"
+       imagePullPolicy: {{ .Values.image.pullPolicy }}
+       env:
+        - name: CACHE_TYPE
+          value: "remote"
+        - name: CACHE_ADDRESS
+          value: {{ .Values.redis_ip }}
+  replicas: {{ .Values.replicaCount  }}
+  selector:
+    matchLabels:
+     app: backend-python
