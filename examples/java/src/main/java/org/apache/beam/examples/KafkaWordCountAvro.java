@@ -35,9 +35,9 @@ package org.apache.beam.examples;
 //      kafka:
 //          topic:
 //              id: dataset
-//              dataset: dataset
+//              dataset: CountWords
 //   datasets:
-//      dataset:
+//      CountWords:
 //          location: local
 //          format: avro
 
