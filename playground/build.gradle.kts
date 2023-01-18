@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 
+# Some comment
+
 description = "Apache Beam :: Playground"
 
 // generate protobuf client and server stubs
