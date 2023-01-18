@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-# Some comment
+# Some commentasd
 
 description = "Apache Beam :: Playground"
 
