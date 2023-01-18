@@ -35,21 +35,24 @@ steps:
         SERVER_ADDRESS="https://${_SDK}.playground-uat.xyz" \
         BEAM_USE_WEBGRPC=yes \
         BEAM_CONCURRENCY=4
-        python3 ci_cd.py --step ${_STEP} --sdk SDK_${_SDK} --origin ${_ORIGIN} \
-        --subdirs ${_SUBDIRS}
+        for sdk in go java python
+        do
+            export sdks=$sdk
+            export SERVER_ADDRESS=https://$sdks-playground 
+            python3 ci_cd.py --step ${_STEP} --sdk SDK_$sdks --origin ${_ORIGIN} --subdirs ${_SUBDIRS}
+        done
 
     env:
       - 'ORIGIN=${_ORIGIN}'
-      - 'SDK=${_SDK}'
       - 'STEP=${_STEP}'
       - 'SUBDIRS=${_SUBDIRS}'
       - 'GOOGLE_CLOUD_PROJECT=$PROJECT_ID'
 
 substitutions:
   _STEP: CD
-  _SDK: GO
+  _SDK: JAVA
   _ORIGIN: PG_EXAMPLES
-  _SUBDIRS: "../../learning/katas ../../examples ../../sdks"
+  _SUBDIRS: "././learning/katas ././examples ././sdks"
 
 # This option enables writing logs to Cloud Logging
 options:
