@@ -89,12 +89,12 @@ do
 
       if [[ $example_has_changed == "True" ]]
       then
-            if [ -z ${TAG_NAME} ]
+            if [ -z ${tag_name} ]
             then
-                DOCKERTAG=${COMMIT_SHA}
-            elif [ -z ${COMMIT_SHA} ]
+                DOCKERTAG=${commit_sha}
+            elif [ -z ${commit_sha} ]
             then
-                DOCKERTAG=${TAG_NAME}
+                DOCKERTAG=${tag_name}
             fi
 
             if [ "$sdk" == "python" ]
