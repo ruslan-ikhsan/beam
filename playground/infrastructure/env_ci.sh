@@ -36,7 +36,7 @@ pip install --upgrade google-api-python-client > /dev/null
 python3.8 -m pip install pip --upgrade > /dev/null
 ln -s /usr/bin/python3.8 /usr/bin/python > /dev/null
 apt install python3.8-venv > /dev/null
-pip install -r requirements.txt > /dev/null
+pip install -r playground/infrastructure/requirements.txt > /dev/null
 
 # Install jdk and gradle
 apt-get install openjdk-8-jdk -y > /dev/null
@@ -75,7 +75,7 @@ echo "${diff}"
 # Check if there are Examples
 for sdk in "${sdks[@]}"
 do
-      python3 checker.py \
+      python3 playground/infrastructure/checker.py \
       --verbose \
       --sdk SDK_"${sdk^^}" \
       --allowlist "${allowlist[@]}" \
@@ -126,7 +126,7 @@ do
             docker run -d -p 8080:8080 --network=cloudbuild -e PROTOCOL_TYPE=TCP --name container-${sdk} $IMAGE_TAG
             sleep 10
             export SERVER_ADDRESS=container-${sdk}:8080
-            python3 ci_cd.py \
+            python3 playground/infrastructure/ci_cd.py \
             --step ${STEP} \
             --sdk SDK_"${sdk^^}" \
             --origin ${ORIGIN} \
