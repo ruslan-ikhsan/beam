@@ -67,7 +67,7 @@ allowlist=("playground/infrastructure" "playground/backend")
 
 # Get Difference
 
-diff=$(echo $changed_files | sed 's/[][]//g;s/,/\n/g')
+diff=$(echo $changed_files | sed 's/[][]//g;s/""//g;s/,/\n/g')
 echo "${diff}"
 
 # Check if there are Examples
