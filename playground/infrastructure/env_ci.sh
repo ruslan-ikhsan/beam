@@ -69,7 +69,7 @@ allowlist=("playground/infrastructure" "playground/backend")
 
 # Get Difference
 
-diff=$(echo $changed_files | sed 's/[][]//g;s/"//g;s/,/\n/g')
+diff=$(echo "$changed_files" | sed 's/[][]//g;s/"//g;s/,/\n/g')
 echo "${diff}"
 
 # Check if there are Examples
@@ -89,10 +89,10 @@ do
 
       if [[ $example_has_changed == "True" ]]
       then
-            if [ -z ${tag_name} ]
+            if [ -z "${tag_name}" ]
             then
                 DOCKERTAG=${commit_sha}
-            elif [ -z ${commit_sha} ]
+            elif [ -z "${commit_sha}" ]
             then
                 DOCKERTAG=${tag_name}
             fi
@@ -100,7 +100,7 @@ do
             if [ "$sdk" == "python" ]
             then
                 # builds apache/beam_python3.7_sdk:$DOCKERTAG image
-                ./gradlew -i :sdks:python:container:py37:docker -Pdocker-tag=${DOCKERTAG}
+                ./gradlew -i :sdks:python:container:py37:docker -Pdocker-tag="${DOCKERTAG}"
                 # and set SDK_TAG to DOCKERTAG so that the next step would find it
                 SDK_TAG=${DOCKERTAG}
             else
@@ -119,22 +119,22 @@ do
                 opts="$opts -Pbase-image=apache/beam_java8_sdk:2.43.0"
             fi
 
-            ./gradlew -i playground:backend:containers:"${sdk}":docker ${opts}
+            ./gradlew -i playground:backend:containers:"${sdk}":docker "${opts}"
 
             IMAGE_TAG=apache/beam_playground-backend-${sdk}:${DOCKERTAG}
 
-            docker run -d -p 8080:8080 --network=cloudbuild -e PROTOCOL_TYPE=TCP --name container-${sdk} $IMAGE_TAG
+            docker run -d -p 8080:8080 --network=cloudbuild -e PROTOCOL_TYPE=TCP --name container-"${sdk}" "$IMAGE_TAG"
             sleep 10
             export SERVER_ADDRESS=container-${sdk}:8080
             python3 playground/infrastructure/ci_cd.py \
-            --step ${STEP} \
+            --step "${STEP}" \
             --sdk SDK_"${sdk^^}" \
-            --origin ${ORIGIN} \
-            --subdirs ${SUBDIRS}
+            --origin "${ORIGIN}" \
+            --subdirs "${SUBDIRS}"
 
-            docker stop container-${sdk}
-            docker rm container-${sdk}
+            docker stop container-"${sdk}"
+            docker rm container-"${sdk}"
       else
-        echo "Nothing changed"
+            echo "Nothing changed"
       fi
 done
