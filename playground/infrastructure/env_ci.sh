@@ -67,8 +67,8 @@ allowlist=("playground/infrastructure" "playground/backend")
 
 # Get Difference
 
-diff="${changed_files// /$'\n'}"
-echo ${diff}
+diff=$(echo $changed_files | sed 's/[][]//g;s/,/\n/g')
+echo "${diff}"
 
 # Check if there are Examples
 for sdk in "${sdks[@]}"
