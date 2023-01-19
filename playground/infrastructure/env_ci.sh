@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Comment
+
 export GRADLE_VERSION=7.5.1
 export GO_VERSION=1.18
 
