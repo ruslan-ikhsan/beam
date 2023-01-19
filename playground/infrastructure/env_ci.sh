@@ -17,6 +17,8 @@
 
 # Comment
 
+set -x
+
 export GRADLE_VERSION=7.5.1
 export GO_VERSION=1.18
 
@@ -67,7 +69,7 @@ allowlist=("playground/infrastructure" "playground/backend")
 
 # Get Difference
 
-diff=$(echo $changed_files | sed 's/[][]//g;s/""//g;s/,/\n/g')
+diff=$(echo $changed_files | sed 's/[][]//g;s/"//g;s/,/\n/g')
 echo "${diff}"
 
 # Check if there are Examples
