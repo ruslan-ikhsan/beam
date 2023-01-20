@@ -132,6 +132,6 @@ do
             docker stop container-${sdk}
             docker rm container-${sdk}
       else
-            echo "Nothing changed in Examples. CI is skipped"
+            echo "Nothing changed in Examples. CI check is skipped"
       fi
 done
