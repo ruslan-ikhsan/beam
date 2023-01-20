@@ -135,6 +135,6 @@ do
             docker stop container-${sdk}
             docker rm container-${sdk}
       else
-            echo "Nothing changed"
+            echo "Nothing changed in Examples"
       fi
 done
