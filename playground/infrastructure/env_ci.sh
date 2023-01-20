@@ -25,7 +25,6 @@ export GO_VERSION=1.18
 apt-get update > /dev/null
 apt update > /dev/null
 export DEBIAN_FRONTEND=noninteractive
-apt install -y git > /dev/null
 
 apt-get install -y apt-transport-https ca-certificates software-properties-common curl unzip apt-utils > /dev/null
 add-apt-repository -y ppa:deadsnakes/ppa > /dev/null && apt update > /dev/null
