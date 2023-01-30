@@ -1,4 +1,3 @@
-#
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -15,6 +14,11 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-#
 
-bucket  = "pg-second"
+variable "project_id" {
+  description = "The ID of the Google Cloud project within which resources are provisioned"
+}
+
+variable "service_account_id" {
+  description = "The ID of the service account responsible for running Google Cloud functions"
+}
