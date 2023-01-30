@@ -46,6 +46,6 @@ func (s *stringSlice) Set(value string) error {
 }
 
 // Get returns the instance itself.
-func (s stringSlice) Get() any {
+func (s stringSlice) Get() interface{} {
 	return s
 }

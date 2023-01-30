@@ -17,67 +17,47 @@
      under the License.
  -->
 
-# Tour of Beam
+ # Tour of Beam
+ These are the main sources of the Tour of Beam website.
 
-These are the main sources of the Tour of Beam website.
-
-# About
+ # About
 
 ## Getting started
-
-This project relies on generated code for some functionality:
-deserializers, test mocks, constants for asset files,
-extracted Beam symbols for the editor, etc.
-
-All generated files are version-controlled, so after checkout the project is immediately runnable.
-However, after changes you may need to re-run code generation:
+Running, debugging, and testing all require this first step that fetches
+dependencies and generates code:
 
 ```bash
-cd beam
-./gradlew :playground:frontend:playground_components:generateCode
-cd learning/tour-of-beam/frontend
-flutter pub run build_runner build --delete-conflicting-outputs
+cd ../../../playground/frontend/playground_components
+flutter pub get
+flutter pub run build_runner build
+cd ../../../learning/tour-of-beam/frontend
+flutter pub get
+flutter pub run build_runner build
 ```
 
 ### Run
 
 The following command is used to build and serve the frontend app locally:
 
-```bash
-flutter run -d chrome
-```
+`$ flutter run -d chrome`
 
-### Backend Selection
 
-To change the Google Project that is used as the backend:
+ # Deployment
 
-1. Update Firebase configuration:
-   https://firebase.google.com/docs/flutter/setup?platform=web
+ # Tests
+ Install ChromeDriver to run integration tests in a browser: https://docs.flutter.dev/testing/integration-tests#running-in-a-browser
+ Run integration tests:
+ flutter drive \
+   --driver=test_driver/integration_test.dart \
+   --target=integration_test/counter_test.dart \
+   -d web-server
 
-2. In `/lib/config.dart`, update:
-   1. Google Project ID and region.
-   2. Playground's backend URLs.
+ # Packages
+ `flutter pub get`
 
-# Deployment
+ # Contribution guide
+ For checks: `./gradlew rat`
 
-# Tests
+ # Additional resources
 
-Install ChromeDriver to run integration tests in a browser: https://docs.flutter.dev/testing/integration-tests#running-in-a-browser
-Run integration tests:
-flutter drive \
- --driver=test_driver/integration_test.dart \
- --target=integration_test/counter_test.dart \
- -d web-server
-
-# Packages
-
-`flutter pub get`
-
-# Contribution guide
-
-For checks: `./gradlew rat`
-Exclusions for file checks can be added in the Tour of Beam section of this file: `beam/build.gradle.kts`
-
-# Additional resources
-
-# Troubleshooting
+ # Troubleshooting

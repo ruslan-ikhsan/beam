@@ -28,7 +28,6 @@ import '../../../models/unit.dart';
 class ContentTreeController extends ChangeNotifier {
   String _sdkId;
   List<String> _treeIds;
-  // TODO(nausharipov): non-nullable currentNode?
   NodeModel? _currentNode;
   final _contentTreeCache = GetIt.instance.get<ContentTreeCache>();
   final _expandedIds = <String>{};
@@ -48,11 +47,6 @@ class ContentTreeController extends ChangeNotifier {
 
   Sdk get sdk => Sdk.parseOrCreate(_sdkId);
   String get sdkId => _sdkId;
-  set sdkId(String newValue) {
-    _sdkId = newValue;
-    notifyListeners();
-  }
-
   List<String> get treeIds => _treeIds;
   NodeModel? get currentNode => _currentNode;
 

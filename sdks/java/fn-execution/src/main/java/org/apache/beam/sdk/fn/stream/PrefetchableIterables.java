@@ -123,7 +123,7 @@ public class PrefetchableIterables {
       return maybePrefetchable(iterables[0]);
     }
     return new Default<T>() {
-      @SuppressWarnings("methodref.receiver")
+      @SuppressWarnings("methodref.receiver.invalid")
       @Override
       public PrefetchableIterator<T> createIterator() {
         return PrefetchableIterators.concatIterators(

@@ -28,15 +28,12 @@ type ObjectInfo struct {
 	Categories      []string
 	PipelineOptions string
 	Link            string
-	UrlVCS          string
-	UrlNotebook     string
 	Multifile       bool
 	ContextLine     int32
 	DefaultExample  bool
 	Sdk             pb.Sdk
 	Complexity      pb.Complexity
 	Tags            []string
-	Datasets        []*pb.Dataset
 }
 
 type PrecompiledObjects []ObjectInfo
@@ -44,11 +41,10 @@ type CategoryToPrecompiledObjects map[string]PrecompiledObjects
 type SdkToCategories map[string]CategoryToPrecompiledObjects
 
 type CatalogDTO struct {
-	Examples              []*entity.ExampleEntity
-	Snippets              []*entity.SnippetEntity
-	Files                 []*entity.FileEntity
-	SdkCatalog            []*entity.SDKEntity
-	DatasetBySnippetIDMap map[string][]*DatasetDTO
+	Examples   []*entity.ExampleEntity
+	Snippets   []*entity.SnippetEntity
+	Files      []*entity.FileEntity
+	SdkCatalog []*entity.SDKEntity
 }
 
 type DefaultExamplesDTO struct {
@@ -70,7 +66,6 @@ type ExampleDTO struct {
 	Snippet            *entity.SnippetEntity
 	Files              []*entity.FileEntity
 	DefaultExampleName string
-	Datasets           []*DatasetDTO
 }
 
 func (e *ExampleDTO) HasMultiFiles() bool {
@@ -95,20 +90,4 @@ func (e *ExampleDTO) GetSDK() pb.Sdk {
 
 func (e *ExampleDTO) GetComplexity() pb.Complexity {
 	return pb.Complexity(pb.Complexity_value[e.Snippet.Complexity])
-}
-
-func (e *ExampleDTO) GetDatasets() []*pb.Dataset {
-	datasetsDTO := e.Datasets
-	if len(datasetsDTO) != 0 {
-		result := make([]*pb.Dataset, 0, len(datasetsDTO))
-		for _, dto := range datasetsDTO {
-			result = append(result, &pb.Dataset{
-				Type:        dto.Emulator,
-				Options:     dto.Config,
-				DatasetPath: dto.Path,
-			})
-		}
-		return result
-	}
-	return make([]*pb.Dataset, 0)
 }

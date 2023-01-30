@@ -17,7 +17,6 @@
  */
 package org.apache.beam.sdk.io.gcp.spanner.changestreams.mapper;
 
-import com.google.cloud.spanner.Dialect;
 import java.io.Serializable;
 
 /**
@@ -33,11 +32,6 @@ public class MapperFactory implements Serializable {
 
   private transient ChangeStreamRecordMapper changeStreamRecordMapperInstance;
   private transient PartitionMetadataMapper partitionMetadataMapperInstance;
-  private final Dialect spannerChangeStreamDatabaseDialect;
-
-  public MapperFactory(Dialect spannerChangeStreamDatabaseDialect) {
-    this.spannerChangeStreamDatabaseDialect = spannerChangeStreamDatabaseDialect;
-  }
 
   /**
    * Creates and returns a singleton instance of a mapper class capable of transforming a {@link
@@ -50,8 +44,7 @@ public class MapperFactory implements Serializable {
    */
   public synchronized ChangeStreamRecordMapper changeStreamRecordMapper() {
     if (changeStreamRecordMapperInstance == null) {
-      changeStreamRecordMapperInstance =
-          new ChangeStreamRecordMapper(this.spannerChangeStreamDatabaseDialect);
+      changeStreamRecordMapperInstance = new ChangeStreamRecordMapper();
     }
     return changeStreamRecordMapperInstance;
   }

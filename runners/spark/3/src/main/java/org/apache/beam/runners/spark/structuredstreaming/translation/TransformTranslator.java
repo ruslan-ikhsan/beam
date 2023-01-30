@@ -24,10 +24,9 @@ import static org.apache.beam.vendor.guava.v26_0_jre.com.google.common.collect.I
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
+import org.apache.beam.runners.core.construction.SerializablePipelineOptions;
 import org.apache.beam.runners.core.construction.TransformInputs;
 import org.apache.beam.runners.spark.structuredstreaming.translation.PipelineTranslator.TranslationState;
-import org.apache.beam.runners.spark.structuredstreaming.translation.batch.functions.SideInputValues;
 import org.apache.beam.sdk.annotations.Internal;
 import org.apache.beam.sdk.coders.Coder;
 import org.apache.beam.sdk.options.PipelineOptions;
@@ -57,13 +56,13 @@ import scala.reflect.ClassTag;
  */
 @Internal
 public abstract class TransformTranslator<
-    InT extends PInput, OutT extends POutput, TransformT extends PTransform<InT, OutT>> {
+    InT extends PInput, OutT extends POutput, TransformT extends PTransform<? extends InT, OutT>> {
 
   protected abstract void translate(TransformT transform, Context cxt) throws IOException;
 
   final void translate(
       TransformT transform,
-      AppliedPTransform<InT, OutT, TransformT> appliedTransform,
+      AppliedPTransform<InT, OutT, PTransform<InT, OutT>> appliedTransform,
       TranslationState translationState)
       throws IOException {
     translate(transform, new Context(appliedTransform, translationState));
@@ -73,10 +72,8 @@ public abstract class TransformTranslator<
    * Checks if a composite / primitive transform can be translated. Composites that cannot be
    * translated as is, will be exploded further for translation of their parts.
    *
-   * <p>This returns {@code true} by default and should be overridden where necessary.
-   *
-   * @throws RuntimeException If a transform uses unsupported features, an exception shall be thrown
-   *     to give early feedback before any part of the pipeline is run.
+   * <p>This should be overridden where necessary. If a transform is know to be unsupported, this
+   * should throw a runtime exception to give early feedback before any part of the pipeline is run.
    */
   protected boolean canTranslate(TransformT transform) {
     return true;
@@ -87,13 +84,14 @@ public abstract class TransformTranslator<
    * shared {@link TranslationState} of the {@link PipelineTranslator}.
    */
   protected class Context implements TranslationState {
-    private final AppliedPTransform<InT, OutT, TransformT> transform;
+    private final AppliedPTransform<InT, OutT, PTransform<InT, OutT>> transform;
     private final TranslationState state;
 
     private @MonotonicNonNull InT pIn = null;
     private @MonotonicNonNull OutT pOut = null;
 
-    private Context(AppliedPTransform<InT, OutT, TransformT> transform, TranslationState state) {
+    private Context(
+        AppliedPTransform<InT, OutT, PTransform<InT, OutT>> transform, TranslationState state) {
       this.transform = transform;
       this.state = state;
     }
@@ -128,7 +126,7 @@ public abstract class TransformTranslator<
       return pc;
     }
 
-    public AppliedPTransform<InT, OutT, TransformT> getCurrentTransform() {
+    public AppliedPTransform<InT, OutT, PTransform<InT, OutT>> getCurrentTransform() {
       return transform;
     }
 
@@ -138,30 +136,18 @@ public abstract class TransformTranslator<
     }
 
     @Override
-    public <T> Broadcast<SideInputValues<T>> getSideInputBroadcast(
-        PCollection<T> pCollection, SideInputValues.Loader<T> loader) {
-      return state.getSideInputBroadcast(pCollection, loader);
-    }
-
-    @Override
     public <T> void putDataset(
         PCollection<T> pCollection, Dataset<WindowedValue<T>> dataset, boolean cache) {
       state.putDataset(pCollection, dataset, cache);
     }
 
     @Override
-    public boolean isLeave(PCollection<?> pCollection) {
-      return state.isLeave(pCollection);
+    public SerializablePipelineOptions getSerializableOptions() {
+      return state.getSerializableOptions();
     }
 
-    @Override
-    public Supplier<PipelineOptions> getOptionsSupplier() {
-      return state.getOptionsSupplier();
-    }
-
-    @Override
     public PipelineOptions getOptions() {
-      return state.getOptions();
+      return state.getSerializableOptions().get();
     }
 
     public <T> Dataset<WindowedValue<T>> createDataset(

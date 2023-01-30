@@ -16,67 +16,31 @@
  * limitations under the License.
  */
 
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
-import '../constants/sizes.dart';
 import '../controllers/snippet_editing_controller.dart';
-import 'loading_indicator.dart';
-import 'snippet_file_editor.dart';
-import 'tabbed_snippet_editor.dart';
+import 'editor_textarea.dart';
 
 class SnippetEditor extends StatelessWidget {
+  final SnippetEditingController controller;
+  final bool isEditable;
+  final bool goToContextLine;
+
   const SnippetEditor({
     required this.controller,
     required this.isEditable,
-    this.actionsWidget,
+    required this.goToContextLine,
   });
-
-  final SnippetEditingController controller;
-  final bool isEditable;
-
-  /// A child widget that will be:
-  ///  - Hidden if no file is loaded.
-  ///  - Shown as an overlay for a single file editor.
-  ///  - Built into the tab bar for a multi-file editor.
-  final Widget? actionsWidget;
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: controller,
-      builder: (context, child) {
-        switch (controller.fileControllers.length) {
-          case 0:
-            return const Center(
-              child: LoadingIndicator(),
-            );
-
-          case 1:
-            return Stack(
-              children: [
-                Positioned.fill(
-                  child: SnippetFileEditor(
-                    controller: controller.fileControllers.first,
-                    isEditable: isEditable,
-                  ),
-                ),
-                if (actionsWidget != null)
-                  Positioned(
-                    right: 0,
-                    top: BeamSizes.size10,
-                    child: actionsWidget!,
-                  ),
-              ],
-            );
-
-          default:
-            return TabbedSnippetEditor(
-              controller: controller,
-              isEditable: isEditable,
-              trailing: actionsWidget,
-            );
-        }
-      },
+    return EditorTextArea(
+      codeController: controller.codeController,
+      sdk: controller.sdk,
+      enabled: !(controller.selectedExample?.isMultiFile ?? false),
+      example: controller.selectedExample,
+      isEditable: isEditable,
+      goToContextLine: goToContextLine,
     );
   }
 }

@@ -16,11 +16,10 @@
 package preparers
 
 import (
-	"fmt"
-	"sync"
-
 	pb "beam.apache.org/playground/backend/internal/api/v1"
 	"beam.apache.org/playground/backend/internal/validators"
+	"fmt"
+	"sync"
 )
 
 // Preparer is used to make preparations with file with code.
@@ -41,12 +40,11 @@ func (preparers *Preparers) GetPreparers() *[]Preparer {
 type PreparersBuilder struct {
 	preparers *Preparers
 	filePath  string
-	params    map[string]string
 }
 
 //NewPreparersBuilder constructor for PreparersBuilder
-func NewPreparersBuilder(filePath string, params map[string]string) *PreparersBuilder {
-	return &PreparersBuilder{preparers: &Preparers{functions: &[]Preparer{}}, filePath: filePath, params: params}
+func NewPreparersBuilder(filePath string) *PreparersBuilder {
+	return &PreparersBuilder{preparers: &Preparers{functions: &[]Preparer{}}, filePath: filePath}
 }
 
 //Build builds preparers from PreparersBuilder
@@ -59,12 +57,12 @@ func (builder *PreparersBuilder) AddPreparer(newPreparer Preparer) {
 }
 
 // GetPreparers returns slice of preparers.Preparer according to sdk
-func GetPreparers(sdk pb.Sdk, filepath string, valResults *sync.Map, prepareParams map[string]string) (*[]Preparer, error) {
+func GetPreparers(sdk pb.Sdk, filepath string, valResults *sync.Map) (*[]Preparer, error) {
 	isUnitTest, ok := valResults.Load(validators.UnitTestValidatorName)
 	if !ok {
 		return nil, fmt.Errorf("GetPreparers:: No information about unit test validation result")
 	}
-	builder := NewPreparersBuilder(filepath, prepareParams)
+	builder := NewPreparersBuilder(filepath)
 	switch sdk {
 	case pb.Sdk_SDK_JAVA:
 		isKata, ok := valResults.Load(validators.KatasValidatorName)

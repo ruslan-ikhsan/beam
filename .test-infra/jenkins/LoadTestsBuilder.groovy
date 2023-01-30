@@ -43,8 +43,7 @@ class LoadTestsBuilder {
 
 
   static void loadTest(context, String title, Runner runner, SDK sdk, Map<String, ?> options,
-      String mainClass, List<String> jobSpecificSwitches = null, String requirementsTxtFile = null,
-      String pythonVersion = null) {
+      String mainClass, List<String> jobSpecificSwitches = null, String requirementsTxtFile = null) {
     options.put('runner', runner.option)
     InfluxDBCredentialsHelper.useCredentials(context)
 
@@ -53,7 +52,7 @@ class LoadTestsBuilder {
       gradle {
         rootBuildScriptDir(commonJobProperties.checkoutDir)
         setGradleTask(delegate, runner, sdk, options, mainClass,
-            jobSpecificSwitches, requirementsTxtFile, pythonVersion)
+            jobSpecificSwitches, requirementsTxtFile)
         commonJobProperties.setGradleSwitches(delegate)
       }
     }
@@ -93,8 +92,7 @@ class LoadTestsBuilder {
   }
 
   private static void setGradleTask(context, Runner runner, SDK sdk, Map<String, ?> options,
-      String mainClass, List<String> jobSpecificSwitches, String requirementsTxtFile = null,
-      String pythonVersion = null) {
+      String mainClass, List<String> jobSpecificSwitches, String requirementsTxtFile = null) {
     context.tasks(getGradleTaskName(sdk))
     context.switches("-PloadTest.mainClass=\"${mainClass}\"")
     context.switches("-Prunner=${runner.getDependencyBySDK(sdk)}")
@@ -109,12 +107,7 @@ class LoadTestsBuilder {
     }
 
     if (sdk == SDK.PYTHON) {
-      if (pythonVersion == null) {
-        context.switches("-PpythonVersion=${LOAD_TEST_PYTHON_VERSION}")
-      }
-      else {
-        context.switches("-PpythonVersion=${pythonVersion}")
-      }
+      context.switches("-PpythonVersion=${LOAD_TEST_PYTHON_VERSION}")
     }
   }
 

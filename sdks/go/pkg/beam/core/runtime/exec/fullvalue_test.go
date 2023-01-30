@@ -27,7 +27,7 @@ import (
 	"github.com/apache/beam/sdks/v2/go/pkg/beam/core/util/reflectx"
 )
 
-func makeInput(vs ...any) []MainInput {
+func makeInput(vs ...interface{}) []MainInput {
 	var ret []MainInput
 	for _, v := range makeValues(vs...) {
 		ret = append(ret, MainInput{Key: v})
@@ -35,7 +35,7 @@ func makeInput(vs ...any) []MainInput {
 	return ret
 }
 
-func makeValues(vs ...any) []FullValue {
+func makeValues(vs ...interface{}) []FullValue {
 	var ret []FullValue
 	for _, v := range vs {
 		ret = append(ret, FullValue{
@@ -47,7 +47,7 @@ func makeValues(vs ...any) []FullValue {
 	return ret
 }
 
-func makeWindowedInput(ws []typex.Window, vs ...any) []MainInput {
+func makeWindowedInput(ws []typex.Window, vs ...interface{}) []MainInput {
 	var ret []MainInput
 	for _, v := range makeWindowedValues(ws, vs...) {
 		ret = append(ret, MainInput{Key: v})
@@ -55,7 +55,7 @@ func makeWindowedInput(ws []typex.Window, vs ...any) []MainInput {
 	return ret
 }
 
-func makeWindowedValues(ws []typex.Window, vs ...any) []FullValue {
+func makeWindowedValues(ws []typex.Window, vs ...interface{}) []FullValue {
 	var ret []FullValue
 	for _, v := range vs {
 		ret = append(ret, FullValue{
@@ -67,7 +67,7 @@ func makeWindowedValues(ws []typex.Window, vs ...any) []FullValue {
 	return ret
 }
 
-func makeValuesNoWindowOrTime(vs ...any) []FullValue {
+func makeValuesNoWindowOrTime(vs ...interface{}) []FullValue {
 	var ret []FullValue
 	for _, v := range vs {
 		ret = append(ret, FullValue{
@@ -78,7 +78,7 @@ func makeValuesNoWindowOrTime(vs ...any) []FullValue {
 }
 
 // makeKVValues returns a list of KV<K,V> inputs as a list of main inputs.
-func makeKVInput(key any, vs ...any) []MainInput {
+func makeKVInput(key interface{}, vs ...interface{}) []MainInput {
 	var ret []MainInput
 	for _, v := range makeKVValues(key, vs...) {
 		ret = append(ret, MainInput{Key: v})
@@ -87,7 +87,7 @@ func makeKVInput(key any, vs ...any) []MainInput {
 }
 
 // makeKVValues returns a list of KV<K,V> inputs.
-func makeKVValues(key any, vs ...any) []FullValue {
+func makeKVValues(key interface{}, vs ...interface{}) []FullValue {
 	var ret []FullValue
 	for _, v := range vs {
 		k := FullValue{
@@ -103,7 +103,7 @@ func makeKVValues(key any, vs ...any) []FullValue {
 
 // makeKeyedInput returns a CoGBK<K, V> where the list of values are a stream
 // in a single main input.
-func makeKeyedInput(key any, vs ...any) []MainInput {
+func makeKeyedInput(key interface{}, vs ...interface{}) []MainInput {
 	k := FullValue{
 		Windows:   window.SingleGlobalWindow,
 		Timestamp: mtime.ZeroTimestamp,
@@ -115,7 +115,7 @@ func makeKeyedInput(key any, vs ...any) []MainInput {
 	}}
 }
 
-func makeKV(k, v any) []FullValue {
+func makeKV(k, v interface{}) []FullValue {
 	return []FullValue{{
 		Windows:   window.SingleGlobalWindow,
 		Timestamp: mtime.ZeroTimestamp,
@@ -124,16 +124,16 @@ func makeKV(k, v any) []FullValue {
 	}}
 }
 
-func extractValues(vs ...FullValue) []any {
-	var ret []any
+func extractValues(vs ...FullValue) []interface{} {
+	var ret []interface{}
 	for _, v := range vs {
 		ret = append(ret, v.Elm)
 	}
 	return ret
 }
 
-func extractKeyedValues(vs ...FullValue) []any {
-	var ret []any
+func extractKeyedValues(vs ...FullValue) []interface{} {
+	var ret []interface{}
 	for _, v := range vs {
 		ret = append(ret, v.Elm2)
 	}
@@ -189,7 +189,7 @@ func TestConvert(t *testing.T) {
 	tests := []struct {
 		name    string
 		to      reflect.Type
-		v, want any
+		v, want interface{}
 	}{
 		{
 			name: "int_to_int",
@@ -270,7 +270,7 @@ func TestDecodeStream(t *testing.T) {
 		if got, want := len(vals), int(size); got != want {
 			t.Errorf("unable to ReadAll from decodeStream, got %v elements, want %v elements", got, want)
 		}
-		var wants []any
+		var wants []interface{}
 		for i := int64(0); i < size; i++ {
 			wants = append(wants, i)
 		}
@@ -296,7 +296,7 @@ func TestDecodeStream(t *testing.T) {
 		if got, want := len(vals), int(shortSize); got != want {
 			t.Errorf("unable to ReadAll from decodeStream, got %v elements, want %v elements", got, want)
 		}
-		var wants []any
+		var wants []interface{}
 		for i := int64(0); i < shortSize; i++ {
 			wants = append(wants, i)
 		}
@@ -355,7 +355,7 @@ func TestDecodeMultiChunkStream(t *testing.T) {
 		if got, want := len(vals), int(size); got != want {
 			t.Errorf("unable to ReadAll from decodeStream, got %v elements, want %v elements", got, want)
 		}
-		var wants []any
+		var wants []interface{}
 		for i := int64(0); i < size; i++ {
 			wants = append(wants, i)
 		}
@@ -381,7 +381,7 @@ func TestDecodeMultiChunkStream(t *testing.T) {
 		if got, want := len(vals), int(shortSize); got != want {
 			t.Errorf("unable to ReadAll from decodeStream, got %v elements, want %v elements", got, want)
 		}
-		var wants []any
+		var wants []interface{}
 		for i := int64(0); i < shortSize; i++ {
 			wants = append(wants, i)
 		}

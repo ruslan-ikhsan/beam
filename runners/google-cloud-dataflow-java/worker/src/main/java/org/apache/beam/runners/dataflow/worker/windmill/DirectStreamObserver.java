@@ -28,7 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A {@link StreamObserver} which synchronizes access to the underlying {@link CallStreamObserver}
+ * A {@link StreamObserver} which uses synchronization on the underlying {@link CallStreamObserver}
  * to provide thread safety.
  *
  * <p>Flow control with the underlying {@link CallStreamObserver} is handled with a {@link Phaser}
@@ -41,66 +41,45 @@ public final class DirectStreamObserver<T> implements StreamObserver<T> {
   private static final Logger LOG = LoggerFactory.getLogger(DirectStreamObserver.class);
   private final Phaser phaser;
 
-  private final Object lock = new Object();
-
-  @GuardedBy("lock")
+  @GuardedBy("outboundObserver")
   private final CallStreamObserver<T> outboundObserver;
 
   private final long deadlineSeconds;
-  private final int messagesBetweenIsReadyChecks;
 
-  @GuardedBy("lock")
-  private int messagesSinceReady = 0;
+  @GuardedBy("outboundObserver")
+  private boolean firstMessage = true;
 
   public DirectStreamObserver(
-      Phaser phaser,
-      CallStreamObserver<T> outboundObserver,
-      long deadlineSeconds,
-      int messagesBetweenIsReadyChecks) {
+      Phaser phaser, CallStreamObserver<T> outboundObserver, long deadlineSeconds) {
     this.phaser = phaser;
     this.outboundObserver = outboundObserver;
     this.deadlineSeconds = deadlineSeconds;
-    // We always let the first message pass through without blocking because it is performed under
-    // the StreamPool synchronized block and single header message isn't going to cause memory
-    // issues due to excessive buffering within grpc.
-    this.messagesBetweenIsReadyChecks = Math.max(1, messagesBetweenIsReadyChecks);
   }
 
   @Override
   public void onNext(T value) {
-    int awaitPhase = -1;
+    final int phase = phaser.getPhase();
     long totalSecondsWaited = 0;
     long waitSeconds = 1;
     while (true) {
       try {
-        synchronized (lock) {
-          // We only check isReady periodically to effectively allow for increasing the outbound
-          // buffer periodically. This reduces the overhead of blocking while still restricting
-          // memory because there is a limited # of streams, and we have a max messages size of 2MB.
-          if (++messagesSinceReady <= messagesBetweenIsReadyChecks) {
-            outboundObserver.onNext(value);
-            return;
-          }
-          // If we awaited previously and timed out, wait for the same phase. Otherwise we're
-          // careful to observe the phase before observing isReady.
-          if (awaitPhase < 0) {
-            awaitPhase = phaser.getPhase();
-          }
-          if (outboundObserver.isReady()) {
-            messagesSinceReady = 0;
+        synchronized (outboundObserver) {
+          // We let the first message passthrough without blocking because it is performed under the
+          // StreamPool synchronized block and single message isn't going to cause memory issues due
+          // to excessive buffering within grpc.
+          if (firstMessage || outboundObserver.isReady()) {
+            firstMessage = false;
             outboundObserver.onNext(value);
             return;
           }
         }
-        // A callback has been registered to advance the phaser whenever the observer
-        // transitions to  is ready. Since we are waiting for a phase observed before the
-        // outboundObserver.isReady() returned false, we expect it to advance after the
-        // channel has become ready.  This doesn't always seem to be the case (despite
-        // documentation stating otherwise) so we poll periodically and enforce an overall
-        // timeout related to the stream deadline.
-        phaser.awaitAdvanceInterruptibly(awaitPhase, waitSeconds, TimeUnit.SECONDS);
-        synchronized (lock) {
-          messagesSinceReady = 0;
+        // A callback has been registered to advance the phaser whenever the observer transitions to
+        // is ready. Since we are waiting for a phase observed before the outboundObserver.isReady()
+        // returned false, we expect it to advance after the channel has become ready.  This doesn't
+        // always seem to be the case (despite documentation stating otherwise) so we poll
+        // periodically and enforce an overall timeout related to the stream deadline.
+        phaser.awaitAdvanceInterruptibly(phase, waitSeconds, TimeUnit.SECONDS);
+        synchronized (outboundObserver) {
           outboundObserver.onNext(value);
           return;
         }
@@ -109,33 +88,33 @@ public final class DirectStreamObserver<T> implements StreamObserver<T> {
         if (totalSecondsWaited > deadlineSeconds) {
           LOG.error(
               "Exceeded timeout waiting for the outboundObserver to become ready meaning "
-                  + "that the stream deadline was not respected.");
+                  + "that the streamdeadline was not respected.");
           throw new RuntimeException(e);
-        }
-        if (totalSecondsWaited > 30) {
-          LOG.info(
-              "Output channel stalled for {}s, outbound thread {}.",
-              totalSecondsWaited,
-              Thread.currentThread().getName());
         }
         waitSeconds = waitSeconds * 2;
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         throw new RuntimeException(e);
       }
+      if (totalSecondsWaited > 30) {
+        LOG.info(
+            "Output channel stalled for {}s, outbound thread {}.",
+            totalSecondsWaited,
+            Thread.currentThread().getName());
+      }
     }
   }
 
   @Override
   public void onError(Throwable t) {
-    synchronized (lock) {
+    synchronized (outboundObserver) {
       outboundObserver.onError(t);
     }
   }
 
   @Override
   public void onCompleted() {
-    synchronized (lock) {
+    synchronized (outboundObserver) {
       outboundObserver.onCompleted();
     }
   }

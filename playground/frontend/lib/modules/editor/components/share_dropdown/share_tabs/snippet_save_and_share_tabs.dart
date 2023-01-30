@@ -16,69 +16,32 @@
  * limitations under the License.
  */
 
-import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:playground/modules/editor/components/share_dropdown/share_tabs/example_share_tabs.dart';
 import 'package:playground_components/playground_components.dart';
 
-import 'example_share_tabs.dart';
-
-/// Saves the current playground content when shown,
-/// then presents a shareable link.
-// TODO(alexeyinkin): Refactor code sharing, https://github.com/apache/beam/issues/24637
-class SnippetSaveAndShareTabs extends StatefulWidget {
-  final VoidCallback onError;
+class SnippetSaveAndShareTabs extends StatelessWidget {
   final PlaygroundController playgroundController;
-  final Sdk sdk;
   final TabController tabController;
 
   const SnippetSaveAndShareTabs({
     super.key,
-    required this.onError,
     required this.playgroundController,
-    required this.sdk,
     required this.tabController,
   });
 
   @override
-  State<SnippetSaveAndShareTabs> createState() =>
-      _SnippetSaveAndShareTabsState();
-}
-
-class _SnippetSaveAndShareTabsState extends State<SnippetSaveAndShareTabs> {
-  Future<ExampleLoadingDescriptor>? _future;
-
-  @override
-  void initState() {
-    super.initState();
-    unawaited(_initSaving());
-  }
-
-  Future<void> _initSaving() async {
-    try {
-      _future = widget.playgroundController.saveSnippet();
-      await _future;
-    } on Exception catch (ex) {
-      PlaygroundComponents.toastNotifier.addException(ex);
-      widget.onError();
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-      future: _future,
+      future: playgroundController.getSnippetId(),
       builder: (context, snapshot) {
-        final descriptor = snapshot.data;
-
-        if (descriptor == null) {
+        if (!snapshot.hasData) {
           return const LoadingIndicator();
         }
 
         return ExampleShareTabs(
-          descriptor: descriptor,
-          sdk: widget.sdk,
-          tabController: widget.tabController,
+          examplePath: snapshot.data.toString(),
+          tabController: tabController,
         );
       },
     );

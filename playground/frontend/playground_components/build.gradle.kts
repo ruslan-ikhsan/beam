@@ -137,7 +137,6 @@ tasks.register("generateCode") {
 tasks.register("extractBeamSymbols") {
   dependsOn("ensureSymbolsDirectoryExists")
   dependsOn("extractBeamSymbolsGo")
-  dependsOn("extractBeamSymbolsJava")
   dependsOn("extractBeamSymbolsPython")
 
   group = "build"
@@ -166,10 +165,6 @@ tasks.register("extractBeamSymbolsGo") {
       standardOutput = FileOutputStream("playground/frontend/playground_components/assets/symbols/go.g.yaml")
     }
   }
-}
-
-tasks.register("extractBeamSymbolsJava") {
-  dependsOn("tools:extract_symbols_java:buildJava")
 }
 
 tasks.register("extractBeamSymbolsPython") {

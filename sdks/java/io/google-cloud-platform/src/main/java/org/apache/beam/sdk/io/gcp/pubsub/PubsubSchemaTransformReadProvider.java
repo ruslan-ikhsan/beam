@@ -21,7 +21,6 @@ import static org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageToRow.DLQ_TAG;
 import static org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageToRow.MAIN_TAG;
 
 import com.google.api.client.util.Clock;
-import com.google.auto.service.AutoService;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -31,7 +30,6 @@ import org.apache.beam.sdk.annotations.Internal;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.schemas.io.payloads.PayloadSerializers;
 import org.apache.beam.sdk.schemas.transforms.SchemaTransform;
-import org.apache.beam.sdk.schemas.transforms.SchemaTransformProvider;
 import org.apache.beam.sdk.schemas.transforms.TypedSchemaTransformProvider;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.values.PCollectionRowTuple;
@@ -51,7 +49,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 })
 @Internal
 @Experimental(Kind.SCHEMAS)
-@AutoService(SchemaTransformProvider.class)
 public class PubsubSchemaTransformReadProvider
     extends TypedSchemaTransformProvider<PubsubSchemaTransformReadConfiguration> {
   private static final String API = "pubsub";

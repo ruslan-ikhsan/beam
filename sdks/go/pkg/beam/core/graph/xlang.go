@@ -48,11 +48,11 @@ func init() {
 // ExpandedTransform stores the expansion response associated to each
 // ExternalTransform.
 //
-// Components and Transform fields are purposely typed as any to avoid
+// Components and Transform fields are purposely typed as interface{} to avoid
 // unnecesary proto related imports into graph.
 type ExpandedTransform struct {
-	Components   any // *pipepb.Components
-	Transform    any // *pipepb.PTransform
+	Components   interface{} // *pipepb.Components
+	Transform    interface{} //*pipepb.PTransform
 	Requirements []string
 }
 

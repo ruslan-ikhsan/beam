@@ -32,7 +32,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.beam.sdk.schemas.Schema;
@@ -229,7 +228,7 @@ public class BeamRowToStorageApiProtoTest {
           .withFieldValue("sqlDateValue", LocalDate.now())
           .withFieldValue("sqlTimeValue", LocalTime.now())
           .withFieldValue("sqlDatetimeValue", LocalDateTime.now())
-          .withFieldValue("sqlTimestampValue", java.time.Instant.now().plus(123, ChronoUnit.MICROS))
+          .withFieldValue("sqlTimestampValue", java.time.Instant.now())
           .withFieldValue("enumValue", TEST_ENUM.valueOf("RED"))
           .build();
   private static final Map<String, Object> BASE_PROTO_EXPECTED_FIELDS =
@@ -262,9 +261,10 @@ public class BeamRowToStorageApiProtoTest {
                   BASE_ROW.getLogicalTypeValue("sqlDatetimeValue", LocalDateTime.class)))
           .put(
               "sqltimestampvalue",
-              ChronoUnit.MICROS.between(
-                  java.time.Instant.EPOCH,
-                  BASE_ROW.getLogicalTypeValue("sqlTimestampValue", java.time.Instant.class)))
+              BASE_ROW
+                      .getLogicalTypeValue("sqlTimestampValue", java.time.Instant.class)
+                      .toEpochMilli()
+                  * 1000)
           .put("enumvalue", "RED")
           .build();
 

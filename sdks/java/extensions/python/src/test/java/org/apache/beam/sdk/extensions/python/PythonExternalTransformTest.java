@@ -34,13 +34,15 @@ import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.UsesPythonExpansionService;
 import org.apache.beam.sdk.testing.ValidatesRunner;
 import org.apache.beam.sdk.transforms.Create;
-import org.apache.beam.sdk.transforms.Keys;
+import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.util.PythonCallableSource;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.Row;
+import org.apache.beam.sdk.values.TypeDescriptors;
 import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.collect.ImmutableList;
 import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.collect.ImmutableMap;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -48,7 +50,7 @@ import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
 public class PythonExternalTransformTest implements Serializable {
-
+  @Ignore("https://github.com/apache/beam/issues/21561")
   @Test
   @Category({ValidatesRunner.class, UsesPythonExpansionService.class})
   public void trivialPythonTransform() {
@@ -59,11 +61,12 @@ public class PythonExternalTransformTest implements Serializable {
                 PythonExternalTransform
                     .<PCollection<KV<String, String>>, PCollection<KV<String, Iterable<String>>>>
                         from("apache_beam.GroupByKey"))
-            .apply(Keys.create());
+            .apply(MapElements.into(TypeDescriptors.strings()).via(kv -> kv.getKey()));
     PAssert.that(output).containsInAnyOrder("A", "B");
     // TODO: Run this on a multi-language supporting runner.
   }
 
+  @Ignore("https://github.com/apache/beam/issues/21561")
   @Test
   @Category({ValidatesRunner.class, UsesPythonExpansionService.class})
   public void pythonTransformWithDependencies() {

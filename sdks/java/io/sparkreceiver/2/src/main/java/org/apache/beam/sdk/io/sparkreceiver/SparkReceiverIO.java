@@ -48,11 +48,7 @@ import org.slf4j.LoggerFactory;
  * {@code Long offset} from {@code V record}.
  *
  * <p>Optionally you can pass {@code timestampFn} which is a {@link SerializableFunction} that
- * defines how to get {@code Instant timestamp} from {@code V record}, you can pass {@code
- * startOffset} which is inclusive start offset from which the reading should be started.
- *
- * <p>Optionally you can pass {@code pullFrequencySec} which is a delay in seconds between polling
- * for new records updates.
+ * defines how to get {@code Instant timestamp} from {@code V record}.
  *
  * <p>Example of {@link SparkReceiverIO#read()} usage:
  *
@@ -69,8 +65,6 @@ import org.slf4j.LoggerFactory;
  *    SparkReceiverIO.<String>read()
  *      .withGetOffsetFn(Long::valueOf)
  *      .withTimestampFn(Instant::parse)
- *      .withPullFrequencySec(1L)
- *      .withStartOffset(10L)
  *      .withSparkReceiverBuilder(receiverBuilder);
  * }</pre>
  */
@@ -94,10 +88,6 @@ public class SparkReceiverIO {
 
     abstract @Nullable SerializableFunction<V, Instant> getTimestampFn();
 
-    abstract @Nullable Long getPullFrequencySec();
-
-    abstract @Nullable Long getStartOffset();
-
     abstract Builder<V> toBuilder();
 
     @AutoValue.Builder
@@ -109,10 +99,6 @@ public class SparkReceiverIO {
       abstract Builder<V> setGetOffsetFn(SerializableFunction<V, Long> getOffsetFn);
 
       abstract Builder<V> setTimestampFn(SerializableFunction<V, Instant> timestampFn);
-
-      abstract Builder<V> setPullFrequencySec(Long pullFrequencySec);
-
-      abstract Builder<V> setStartOffset(Long startOffset);
 
       abstract Read<V> build();
     }
@@ -134,18 +120,6 @@ public class SparkReceiverIO {
     public Read<V> withTimestampFn(SerializableFunction<V, Instant> timestampFn) {
       checkArgument(timestampFn != null, "Timestamp function can not be null");
       return toBuilder().setTimestampFn(timestampFn).build();
-    }
-
-    /** Delay in seconds between polling for new records updates. */
-    public Read<V> withPullFrequencySec(Long pullFrequencySec) {
-      checkArgument(pullFrequencySec != null, "Pull frequency can not be null");
-      return toBuilder().setPullFrequencySec(pullFrequencySec).build();
-    }
-
-    /** Inclusive start offset from which the reading should be started. */
-    public Read<V> withStartOffset(Long startOffset) {
-      checkArgument(startOffset != null, "Start offset can not be null");
-      return toBuilder().setStartOffset(startOffset).build();
     }
 
     @Override

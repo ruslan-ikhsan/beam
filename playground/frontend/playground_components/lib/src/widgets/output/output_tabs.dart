@@ -43,7 +43,7 @@ class OutputTabs extends StatelessWidget {
             playgroundController: playgroundController,
             name: 'widgets.output.result'.tr(),
             isSelected: tabController.index == 0,
-            maxPossibleContent: playgroundController.codeRunner.resultLogOutput,
+            value: playgroundController.outputResult,
             hasFilter: true,
           ),
           if (playgroundController.graphAvailable)
@@ -51,8 +51,7 @@ class OutputTabs extends StatelessWidget {
               playgroundController: playgroundController,
               name: 'widgets.output.graph'.tr(),
               isSelected: tabController.index == 2,
-              maxPossibleContent:
-                  playgroundController.codeRunner.result?.graph ?? '',
+              value: playgroundController.result?.graph ?? '',
             ),
         ],
       ),

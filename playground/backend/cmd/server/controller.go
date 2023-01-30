@@ -16,7 +16,6 @@ package main
 
 import (
 	"context"
-	"errors"
 
 	"cloud.google.com/go/datastore"
 	"github.com/google/uuid"
@@ -26,32 +25,26 @@ import (
 	"beam.apache.org/playground/backend/internal/code_processing"
 	"beam.apache.org/playground/backend/internal/components"
 	"beam.apache.org/playground/backend/internal/db"
-	"beam.apache.org/playground/backend/internal/db/entity"
 	"beam.apache.org/playground/backend/internal/db/mapper"
-	"beam.apache.org/playground/backend/internal/emulators"
 	"beam.apache.org/playground/backend/internal/environment"
-	cerrors "beam.apache.org/playground/backend/internal/errors"
+	"beam.apache.org/playground/backend/internal/errors"
 	"beam.apache.org/playground/backend/internal/logger"
 	"beam.apache.org/playground/backend/internal/setup_tools/life_cycle"
 	"beam.apache.org/playground/backend/internal/utils"
 )
 
 const (
-	errorTitleGetSnippet        = "Error during getting snippet"
-	errorTitleSaveSnippet       = "Error during saving snippet"
-	errorTitleGetCatalog        = "Error during getting catalog"
-	errorTitleGetExample        = "Error during getting example"
-	errorTitleGetExampleCode    = "Error during getting example code"
-	errorTitleGetExampleOutput  = "Error during getting example output"
-	errorTitleGetExampleLogs    = "Error during getting example logs"
-	errorTitleGetExampleGraph   = "Error during getting example graph"
-	errorTitleGetDefaultExample = "Error during getting default example"
-	errorTitleRunCode           = "Error during run code"
+	errorTitleGetSnippet       = "Error during getting snippet"
+	errorTitleSaveSnippet      = "Error during saving snippet"
+	errorTitleGetCatalog       = "Error during getting catalog"
+	errorTitleGetExample       = "Error during getting example"
+	errorTitleGetExampleCode   = "Error during getting example code"
+	errorTitleGetExampleOutput = "Error during getting example output"
+	errorTitleGetExampleLogs   = "Error during getting example logs"
+	errorTitleGetExampleGraph  = "Error during getting example graph"
 
-	userBadCloudPathErrMsg     = "Invalid cloud path parameter"
-	userCloudConnectionErrMsg  = "Cloud connection error"
-	resourceNotFoundErrMsg     = "Resource is not found"
-	resourceInconsistentErrMsg = "Resource is not consistent"
+	userBadCloudPathErrMsg    = "Invalid cloud path parameter"
+	userCloudConnectionErrMsg = "Cloud connection error"
 )
 
 // playgroundController processes `gRPC' requests from clients.
@@ -78,79 +71,46 @@ func (controller *playgroundController) RunCode(ctx context.Context, info *pb.Ru
 	// check for correct sdk
 	if info.Sdk != controller.env.BeamSdkEnvs.ApacheBeamSdk {
 		logger.Errorf("RunCode(): request contains incorrect sdk: %s\n", info.Sdk)
-		return nil, cerrors.InvalidArgumentError("Error during preparing", "Incorrect sdk. Want to receive %s, but the request contains %s", controller.env.BeamSdkEnvs.ApacheBeamSdk.String(), info.Sdk.String())
+		return nil, errors.InvalidArgumentError("Error during preparing", "Incorrect sdk. Want to receive %s, but the request contains %s", controller.env.BeamSdkEnvs.ApacheBeamSdk.String(), info.Sdk.String())
 	}
 	switch info.Sdk {
 	case pb.Sdk_SDK_UNSPECIFIED:
 		logger.Errorf("RunCode(): unimplemented sdk: %s\n", info.Sdk)
-		return nil, cerrors.InvalidArgumentError("Error during preparing", "Sdk is not implemented yet: %s", info.Sdk.String())
+		return nil, errors.InvalidArgumentError("Error during preparing", "Sdk is not implemented yet: %s", info.Sdk.String())
 	}
 
 	cacheExpirationTime := controller.env.ApplicationEnvs.CacheEnvs().KeyExpirationTime()
 	pipelineId := uuid.New()
 
-	var kafkaMockCluster emulators.EmulatorMockCluster
-	var prepareParams = make(map[string]string)
-	if len(info.Datasets) != 0 {
-		kafkaMockClusters, prepareParamsVal, err := emulators.PrepareMockClustersAndGetPrepareParams(info)
-		if err != nil {
-			return nil, cerrors.InternalError(errorTitleRunCode, "Failed to prepare a mock emulator cluster")
-		}
-		kafkaMockCluster = kafkaMockClusters[0]
-		prepareParams = prepareParamsVal
-	}
-	sources := make([]entity.FileEntity, 0)
-	if len(info.Files) > 0 {
-		for _, file := range info.Files {
-			sources = append(sources, entity.FileEntity{
-				Name:     file.Name,
-				Content:  file.Content,
-				IsMain:   file.IsMain,
-				CntxLine: 1,
-			})
-		}
-	} else {
-		fileName, err := utils.GetFileName("", info.Code, info.Sdk)
-		if err != nil {
-			return nil, cerrors.InternalError(errorTitleRunCode, "Failed to get default filename")
-		}
-		sources = append(sources, entity.FileEntity{
-			Name:     fileName,
-			Content:  info.Code,
-			IsMain:   true,
-			CntxLine: 1,
-		})
-	}
-
-	lc, err := life_cycle.Setup(info.Sdk, sources, pipelineId, controller.env.ApplicationEnvs.WorkingDir(), controller.env.ApplicationEnvs.PipelinesFolder(), controller.env.BeamSdkEnvs.PreparedModDir(), kafkaMockCluster)
+	lc, err := life_cycle.Setup(info.Sdk, info.Code, pipelineId, controller.env.ApplicationEnvs.WorkingDir(), controller.env.ApplicationEnvs.PipelinesFolder(), controller.env.BeamSdkEnvs.PreparedModDir())
 	if err != nil {
 		logger.Errorf("RunCode(): error during setup file system: %s\n", err.Error())
-		return nil, cerrors.InternalError("Error during preparing", "Error during setup file system for the code processing: %s", err.Error())
+		return nil, errors.InternalError("Error during preparing", "Error during setup file system for the code processing: %s", err.Error())
 	}
 
 	if err = utils.SetToCache(ctx, controller.cacheService, pipelineId, cache.Status, pb.Status_STATUS_VALIDATING); err != nil {
-		code_processing.DeleteResources(pipelineId, lc, kafkaMockCluster)
-		return nil, cerrors.InternalError("Error during preparing", "Error during saving status of the code processing")
+		code_processing.DeleteFolders(pipelineId, lc)
+		return nil, errors.InternalError("Error during preparing", "Error during saving status of the code processing")
 	}
 	if err = utils.SetToCache(ctx, controller.cacheService, pipelineId, cache.RunOutputIndex, 0); err != nil {
-		code_processing.DeleteResources(pipelineId, lc, kafkaMockCluster)
-		return nil, cerrors.InternalError("Error during preparing", "Error during saving initial run output")
+		code_processing.DeleteFolders(pipelineId, lc)
+		return nil, errors.InternalError("Error during preparing", "Error during saving initial run output")
 	}
 	if err = utils.SetToCache(ctx, controller.cacheService, pipelineId, cache.LogsIndex, 0); err != nil {
-		code_processing.DeleteResources(pipelineId, lc, kafkaMockCluster)
-		return nil, cerrors.InternalError("Error during preparing", "Error during saving value for the logs output")
+		code_processing.DeleteFolders(pipelineId, lc)
+		return nil, errors.InternalError("Error during preparing", "Error during saving value for the logs output")
 	}
 	if err = utils.SetToCache(ctx, controller.cacheService, pipelineId, cache.Canceled, false); err != nil {
-		code_processing.DeleteResources(pipelineId, lc, kafkaMockCluster)
-		return nil, cerrors.InternalError("Error during preparing", "Error during saving initial cancel flag")
+		code_processing.DeleteFolders(pipelineId, lc)
+		return nil, errors.InternalError("Error during preparing", "Error during saving initial cancel flag")
 	}
 	if err = controller.cacheService.SetExpTime(ctx, pipelineId, cacheExpirationTime); err != nil {
 		logger.Errorf("%s: RunCode(): cache.SetExpTime(): %s\n", pipelineId, err.Error())
-		code_processing.DeleteResources(pipelineId, lc, kafkaMockCluster)
-		return nil, cerrors.InternalError("Error during preparing", "Internal error")
+		code_processing.DeleteFolders(pipelineId, lc)
+		return nil, errors.InternalError("Error during preparing", "Internal error")
 	}
 
-	go code_processing.Process(context.Background(), controller.cacheService, lc, pipelineId, &controller.env.ApplicationEnvs, &controller.env.BeamSdkEnvs, info.PipelineOptions, kafkaMockCluster, prepareParams)
+	go code_processing.Process(context.Background(), controller.cacheService, lc, pipelineId, &controller.env.ApplicationEnvs, &controller.env.BeamSdkEnvs, info.PipelineOptions)
 
 	pipelineInfo := pb.RunCodeResponse{PipelineUuid: pipelineId.String()}
 	return &pipelineInfo, nil
@@ -162,7 +122,7 @@ func (controller *playgroundController) CheckStatus(ctx context.Context, info *p
 	errorMessage := "Error during getting status of the code processing"
 	if err != nil {
 		logger.Errorf("%s: CheckStatus(): pipelineId has incorrect value and couldn't be parsed as uuid value: %s", info.PipelineUuid, err.Error())
-		return nil, cerrors.InvalidArgumentError(errorMessage, "pipelineId has incorrect value and couldn't be parsed as uuid value: %s", info.PipelineUuid)
+		return nil, errors.InvalidArgumentError(errorMessage, "pipelineId has incorrect value and couldn't be parsed as uuid value: %s", info.PipelineUuid)
 	}
 	status, err := code_processing.GetProcessingStatus(ctx, controller.cacheService, pipelineId, errorMessage)
 	if err != nil {
@@ -177,7 +137,7 @@ func (controller *playgroundController) GetRunOutput(ctx context.Context, info *
 	errorMessage := "Error during getting run output of the code processing"
 	if err != nil {
 		logger.Errorf("%s: GetRunOutput(): pipelineId has incorrect value and couldn't be parsed as uuid value: %s", info.PipelineUuid, err.Error())
-		return nil, cerrors.InvalidArgumentError(errorMessage, "pipelineId has incorrect value and couldn't be parsed as uuid value: %s", info.PipelineUuid)
+		return nil, errors.InvalidArgumentError(errorMessage, "pipelineId has incorrect value and couldn't be parsed as uuid value: %s", info.PipelineUuid)
 	}
 	lastIndex, err := code_processing.GetLastIndex(ctx, controller.cacheService, pipelineId, cache.RunOutputIndex, errorMessage)
 	if err != nil {
@@ -191,7 +151,7 @@ func (controller *playgroundController) GetRunOutput(ctx context.Context, info *
 	if len(runOutput) > lastIndex {
 		newRunOutput = runOutput[lastIndex:]
 		if err := utils.SetToCache(ctx, controller.cacheService, pipelineId, cache.RunOutputIndex, lastIndex+len(newRunOutput)); err != nil {
-			return nil, cerrors.InternalError(errorMessage, "Error during saving pagination value")
+			return nil, errors.InternalError(errorMessage, "Error during saving pagination value")
 		}
 	}
 
@@ -207,7 +167,7 @@ func (controller *playgroundController) GetLogs(ctx context.Context, info *pb.Ge
 	errorMessage := "Error during getting logs of the code processing"
 	if err != nil {
 		logger.Errorf("%s: %s: pipelineId has incorrect value and couldn't be parsed as uuid value: %s", info.PipelineUuid, errorTitle, err.Error())
-		return nil, cerrors.InvalidArgumentError(errorMessage, "pipelineId has incorrect value and couldn't be parsed as uuid value: %s", info.PipelineUuid)
+		return nil, errors.InvalidArgumentError(errorMessage, "pipelineId has incorrect value and couldn't be parsed as uuid value: %s", info.PipelineUuid)
 	}
 	lastIndex, err := code_processing.GetLastIndex(ctx, controller.cacheService, pipelineId, cache.LogsIndex, errorMessage)
 	if err != nil {
@@ -221,7 +181,7 @@ func (controller *playgroundController) GetLogs(ctx context.Context, info *pb.Ge
 	if len(logs) > lastIndex {
 		newLogs = logs[lastIndex:]
 		if err := utils.SetToCache(ctx, controller.cacheService, pipelineId, cache.LogsIndex, lastIndex+len(newLogs)); err != nil {
-			return nil, cerrors.InternalError(errorMessage, "Error during saving pagination value")
+			return nil, errors.InternalError(errorMessage, "Error during saving pagination value")
 		}
 	}
 
@@ -236,7 +196,7 @@ func (controller *playgroundController) GetRunError(ctx context.Context, info *p
 	errorMessage := "Error during getting error output of the code processing"
 	if err != nil {
 		logger.Errorf("%s: GetRunError(): pipelineId has incorrect value and couldn't be parsed as uuid value: %s", info.PipelineUuid, err.Error())
-		return nil, cerrors.InvalidArgumentError(errorMessage, "pipelineId has incorrect value and couldn't be parsed as uuid value: %s", info.PipelineUuid)
+		return nil, errors.InvalidArgumentError(errorMessage, "pipelineId has incorrect value and couldn't be parsed as uuid value: %s", info.PipelineUuid)
 	}
 	runError, err := code_processing.GetProcessingOutput(ctx, controller.cacheService, pipelineId, cache.RunError, errorMessage)
 	if err != nil {
@@ -251,7 +211,7 @@ func (controller *playgroundController) GetValidationOutput(ctx context.Context,
 	errorMessage := "Error during getting compilation output"
 	if err != nil {
 		logger.Errorf("%s: GetValidationOutput(): pipelineId has incorrect value and couldn't be parsed as uuid value: %s", info.PipelineUuid, err.Error())
-		return nil, cerrors.InvalidArgumentError(errorMessage, "pipelineId has incorrect value and couldn't be parsed as uuid value: %s", info.PipelineUuid)
+		return nil, errors.InvalidArgumentError(errorMessage, "pipelineId has incorrect value and couldn't be parsed as uuid value: %s", info.PipelineUuid)
 	}
 	validationOutput, err := code_processing.GetProcessingOutput(ctx, controller.cacheService, pipelineId, cache.ValidationOutput, errorMessage)
 	if err != nil {
@@ -266,7 +226,7 @@ func (controller *playgroundController) GetPreparationOutput(ctx context.Context
 	errorMessage := "Error during getting compilation output"
 	if err != nil {
 		logger.Errorf("%s: GetPreparationOutput(): pipelineId has incorrect value and couldn't be parsed as uuid value: %s", info.PipelineUuid, err.Error())
-		return nil, cerrors.InvalidArgumentError(errorMessage, "pipelineId has incorrect value and couldn't be parsed as uuid value: %s", info.PipelineUuid)
+		return nil, errors.InvalidArgumentError(errorMessage, "pipelineId has incorrect value and couldn't be parsed as uuid value: %s", info.PipelineUuid)
 	}
 	preparationOutput, err := code_processing.GetProcessingOutput(ctx, controller.cacheService, pipelineId, cache.PreparationOutput, errorMessage)
 	if err != nil {
@@ -281,7 +241,7 @@ func (controller *playgroundController) GetCompileOutput(ctx context.Context, in
 	errorMessage := "Error during getting compilation output"
 	if err != nil {
 		logger.Errorf("%s: GetCompileOutput(): pipelineId has incorrect value and couldn't be parsed as uuid value: %s", info.PipelineUuid, err.Error())
-		return nil, cerrors.InvalidArgumentError(errorMessage, "pipelineId has incorrect value and couldn't be parsed as uuid value: %s", info.PipelineUuid)
+		return nil, errors.InvalidArgumentError(errorMessage, "pipelineId has incorrect value and couldn't be parsed as uuid value: %s", info.PipelineUuid)
 	}
 	compileOutput, err := code_processing.GetProcessingOutput(ctx, controller.cacheService, pipelineId, cache.CompileOutput, errorMessage)
 	if err != nil {
@@ -296,7 +256,7 @@ func (controller *playgroundController) GetGraph(ctx context.Context, info *pb.G
 	errorMessage := "Error during getting graph output"
 	if err != nil {
 		logger.Errorf("%s: GetGraph(): pipelineId has incorrect value and couldn't be parsed as uuid value: %s", info.PipelineUuid, err.Error())
-		return nil, cerrors.InvalidArgumentError(errorMessage, "pipelineId has incorrect value and couldn't be parsed as uuid value: %s", info.PipelineUuid)
+		return nil, errors.InvalidArgumentError(errorMessage, "pipelineId has incorrect value and couldn't be parsed as uuid value: %s", info.PipelineUuid)
 	}
 	graph, err := code_processing.GetGraph(ctx, controller.cacheService, pipelineId, errorMessage)
 	if err != nil {
@@ -311,10 +271,10 @@ func (controller *playgroundController) Cancel(ctx context.Context, info *pb.Can
 	errorMessage := "Error during canceling the code processing"
 	if err != nil {
 		logger.Errorf("%s: Cancel(): pipelineId has incorrect value and couldn't be parsed as uuid value: %s", info.PipelineUuid, err.Error())
-		return nil, cerrors.InvalidArgumentError(errorMessage, "pipelineId has incorrect value and couldn't be parsed as uuid value: %s", info.PipelineUuid)
+		return nil, errors.InvalidArgumentError(errorMessage, "pipelineId has incorrect value and couldn't be parsed as uuid value: %s", info.PipelineUuid)
 	}
 	if err := utils.SetToCache(ctx, controller.cacheService, pipelineId, cache.Canceled, true); err != nil {
-		return nil, cerrors.InternalError(errorMessage, "Error during saving cancel flag value")
+		return nil, errors.InternalError(errorMessage, "Error during saving cancel flag value")
 	}
 	return &pb.CancelResponse{}, nil
 }
@@ -326,7 +286,7 @@ func (controller *playgroundController) Cancel(ctx context.Context, info *pb.Can
 func (controller *playgroundController) GetPrecompiledObjects(ctx context.Context, info *pb.GetPrecompiledObjectsRequest) (*pb.GetPrecompiledObjectsResponse, error) {
 	catalog, err := controller.cacheComponent.GetCatalogFromCacheOrDatastore(ctx, controller.env.ApplicationEnvs.CacheRequestTimeout())
 	if err != nil {
-		return nil, cerrors.InternalError(errorTitleGetCatalog, userCloudConnectionErrMsg)
+		return nil, errors.InternalError(errorTitleGetCatalog, userCloudConnectionErrMsg)
 	}
 	return &pb.GetPrecompiledObjectsResponse{
 		SdkCategories: utils.FilterCatalog(catalog, info.Sdk, info.Category),
@@ -337,19 +297,19 @@ func (controller *playgroundController) GetPrecompiledObjects(ctx context.Contex
 func (controller *playgroundController) GetPrecompiledObject(ctx context.Context, info *pb.GetPrecompiledObjectRequest) (*pb.GetPrecompiledObjectResponse, error) {
 	exampleId, err := utils.GetExampleID(info.GetCloudPath())
 	if err != nil {
-		return nil, cerrors.InvalidArgumentError(errorTitleGetExample, userBadCloudPathErrMsg)
+		return nil, errors.InvalidArgumentError(errorTitleGetExample, userBadCloudPathErrMsg)
 	}
 	sdks, err := controller.cacheComponent.GetSdkCatalogFromCacheOrDatastore(ctx, controller.env.ApplicationEnvs.CacheRequestTimeout())
 	if err != nil {
-		return nil, cerrors.InternalError(errorTitleGetExample, userCloudConnectionErrMsg)
+		return nil, errors.InternalError(errorTitleGetExample, err.Error())
 	}
 	precompiledObject, err := controller.db.GetExample(ctx, exampleId, sdks)
 	if err != nil {
 		switch err {
 		case datastore.ErrNoSuchEntity:
-			return nil, cerrors.NotFoundError(errorTitleGetExample, resourceNotFoundErrMsg)
+			return nil, errors.NotFoundError(errorTitleGetExample, userCloudConnectionErrMsg)
 		default:
-			return nil, cerrors.InternalError(errorTitleGetExample, userCloudConnectionErrMsg)
+			return nil, errors.InternalError(errorTitleGetExample, userCloudConnectionErrMsg)
 		}
 	}
 	return &pb.GetPrecompiledObjectResponse{PrecompiledObject: precompiledObject}, nil
@@ -359,34 +319,18 @@ func (controller *playgroundController) GetPrecompiledObject(ctx context.Context
 func (controller *playgroundController) GetPrecompiledObjectCode(ctx context.Context, info *pb.GetPrecompiledObjectCodeRequest) (*pb.GetPrecompiledObjectCodeResponse, error) {
 	exampleId, err := utils.GetExampleID(info.GetCloudPath())
 	if err != nil {
-		return nil, cerrors.InvalidArgumentError(errorTitleGetExampleCode, userBadCloudPathErrMsg)
+		return nil, errors.InvalidArgumentError(errorTitleGetExampleCode, userBadCloudPathErrMsg)
 	}
-	files, err := controller.db.GetExampleCode(ctx, exampleId)
+	codeString, err := controller.db.GetExampleCode(ctx, exampleId)
 	if err != nil {
 		switch err {
 		case datastore.ErrNoSuchEntity:
-			return nil, cerrors.NotFoundError(errorTitleGetExampleCode, resourceNotFoundErrMsg)
+			return nil, errors.NotFoundError(errorTitleGetExampleCode, userCloudConnectionErrMsg)
 		default:
-			return nil, cerrors.InternalError(errorTitleGetExampleCode, userCloudConnectionErrMsg)
+			return nil, errors.InternalError(errorTitleGetExampleCode, userCloudConnectionErrMsg)
 		}
 	}
-	if len(files) == 0 {
-		return nil, cerrors.NotFoundError(errorTitleGetExampleCode, resourceNotFoundErrMsg)
-	}
-	response := pb.GetPrecompiledObjectCodeResponse{}
-	for _, file := range files {
-		response.Files = append(response.Files, &pb.SnippetFile{
-			Name:    file.Name,
-			Content: file.Content,
-			IsMain:  file.IsMain,
-		})
-		if file.IsMain {
-			response.Code = file.Content
-		}
-	}
-	if len(response.Files) == 0 || response.Code == "" {
-		return nil, cerrors.InternalError(errorTitleGetExampleCode, resourceInconsistentErrMsg)
-	}
+	response := pb.GetPrecompiledObjectCodeResponse{Code: codeString}
 	return &response, nil
 }
 
@@ -394,15 +338,15 @@ func (controller *playgroundController) GetPrecompiledObjectCode(ctx context.Con
 func (controller *playgroundController) GetPrecompiledObjectOutput(ctx context.Context, info *pb.GetPrecompiledObjectOutputRequest) (*pb.GetPrecompiledObjectOutputResponse, error) {
 	exampleId, err := utils.GetExampleID(info.GetCloudPath())
 	if err != nil {
-		return nil, cerrors.InvalidArgumentError(errorTitleGetExampleOutput, userBadCloudPathErrMsg)
+		return nil, errors.InvalidArgumentError(errorTitleGetExampleOutput, userBadCloudPathErrMsg)
 	}
 	output, err := controller.db.GetExampleOutput(ctx, exampleId)
 	if err != nil {
 		switch err {
 		case datastore.ErrNoSuchEntity:
-			return nil, cerrors.NotFoundError(errorTitleGetExampleOutput, resourceNotFoundErrMsg)
+			return nil, errors.NotFoundError(errorTitleGetExampleOutput, userCloudConnectionErrMsg)
 		default:
-			return nil, cerrors.InternalError(errorTitleGetExampleOutput, userCloudConnectionErrMsg)
+			return nil, errors.InternalError(errorTitleGetExampleOutput, userCloudConnectionErrMsg)
 		}
 	}
 	response := pb.GetPrecompiledObjectOutputResponse{Output: output}
@@ -413,15 +357,15 @@ func (controller *playgroundController) GetPrecompiledObjectOutput(ctx context.C
 func (controller *playgroundController) GetPrecompiledObjectLogs(ctx context.Context, info *pb.GetPrecompiledObjectLogsRequest) (*pb.GetPrecompiledObjectLogsResponse, error) {
 	exampleId, err := utils.GetExampleID(info.GetCloudPath())
 	if err != nil {
-		return nil, cerrors.InvalidArgumentError(errorTitleGetExampleLogs, userBadCloudPathErrMsg)
+		return nil, errors.InvalidArgumentError(errorTitleGetExampleLogs, userBadCloudPathErrMsg)
 	}
 	logs, err := controller.db.GetExampleLogs(ctx, exampleId)
 	if err != nil {
 		switch err {
 		case datastore.ErrNoSuchEntity:
-			return nil, cerrors.NotFoundError(errorTitleGetExampleLogs, resourceNotFoundErrMsg)
+			return nil, errors.NotFoundError(errorTitleGetExampleLogs, userCloudConnectionErrMsg)
 		default:
-			return nil, cerrors.InternalError(errorTitleGetExampleLogs, userCloudConnectionErrMsg)
+			return nil, errors.InternalError(errorTitleGetExampleLogs, userCloudConnectionErrMsg)
 		}
 	}
 	response := pb.GetPrecompiledObjectLogsResponse{Output: logs}
@@ -432,15 +376,15 @@ func (controller *playgroundController) GetPrecompiledObjectLogs(ctx context.Con
 func (controller *playgroundController) GetPrecompiledObjectGraph(ctx context.Context, info *pb.GetPrecompiledObjectGraphRequest) (*pb.GetPrecompiledObjectGraphResponse, error) {
 	exampleId, err := utils.GetExampleID(info.GetCloudPath())
 	if err != nil {
-		return nil, cerrors.InvalidArgumentError(errorTitleGetExampleGraph, userBadCloudPathErrMsg)
+		return nil, errors.InvalidArgumentError(errorTitleGetExampleGraph, userBadCloudPathErrMsg)
 	}
 	graph, err := controller.db.GetExampleGraph(ctx, exampleId)
 	if err != nil {
 		switch err {
 		case datastore.ErrNoSuchEntity:
-			return nil, cerrors.NotFoundError(errorTitleGetExampleGraph, resourceNotFoundErrMsg)
+			return nil, errors.NotFoundError(errorTitleGetExampleGraph, userCloudConnectionErrMsg)
 		default:
-			return nil, cerrors.InternalError(errorTitleGetExampleGraph, userCloudConnectionErrMsg)
+			return nil, errors.InternalError(errorTitleGetExampleGraph, userCloudConnectionErrMsg)
 		}
 	}
 	response := pb.GetPrecompiledObjectGraphResponse{Graph: graph}
@@ -452,12 +396,12 @@ func (controller *playgroundController) GetDefaultPrecompiledObject(ctx context.
 	switch info.Sdk {
 	case pb.Sdk_SDK_UNSPECIFIED:
 		logger.Errorf("GetDefaultPrecompiledObject(): unimplemented sdk: %s\n", info.Sdk)
-		return nil, cerrors.InvalidArgumentError(errorTitleGetDefaultExample, "Sdk is not implemented yet: %s", info.Sdk.String())
+		return nil, errors.InvalidArgumentError("Error during preparing", "Sdk is not implemented yet: %s", info.Sdk.String())
 	}
 	precompiledObject, err := controller.cacheComponent.GetDefaultPrecompiledObjectFromCacheOrDatastore(ctx, info.Sdk, controller.env.ApplicationEnvs.CacheRequestTimeout())
 	if err != nil {
 		logger.Errorf("GetDefaultPrecompiledObject(): error during getting catalog: %s", err.Error())
-		return nil, cerrors.InternalError(errorTitleGetDefaultExample, userCloudConnectionErrMsg)
+		return nil, errors.InternalError("Error during getting Precompiled Objects", "Error with cloud connection")
 	}
 	response := pb.GetDefaultPrecompiledObjectResponse{PrecompiledObject: precompiledObject}
 	return &response, nil
@@ -467,18 +411,15 @@ func (controller *playgroundController) GetDefaultPrecompiledObject(ctx context.
 func (controller *playgroundController) SaveSnippet(ctx context.Context, req *pb.SaveSnippetRequest) (*pb.SaveSnippetResponse, error) {
 	if req.Sdk == pb.Sdk_SDK_UNSPECIFIED {
 		logger.Errorf("SaveSnippet(): unimplemented sdk: %s\n", req.Sdk)
-		return nil, cerrors.InvalidArgumentError(errorTitleSaveSnippet, "Sdk is not implemented yet: %s", req.Sdk.String())
+		return nil, errors.InvalidArgumentError(errorTitleSaveSnippet, "Sdk is not implemented yet: %s", req.Sdk.String())
 	}
 	if controller.db == nil {
 		logger.Error("SaveSnippet(): the runner is trying to save the snippet")
-		return nil, cerrors.InvalidArgumentError(errorTitleSaveSnippet, "The runner doesn't support snippets")
+		return nil, errors.InvalidArgumentError(errorTitleSaveSnippet, "The runner doesn't support snippets")
 	}
 	if req.Files == nil || len(req.Files) == 0 {
 		logger.Error("SaveSnippet(): files are empty")
-		return nil, cerrors.InvalidArgumentError(errorTitleSaveSnippet, "Snippet must have files")
-	}
-	if req.PersistenceKey > "" {
-		logger.Debugf("saving snippet by persistence_key: %v", req.PersistenceKey)
+		return nil, errors.InvalidArgumentError(errorTitleSaveSnippet, "Snippet must have files")
 	}
 
 	snippet := controller.entityMapper.ToSnippet(req)
@@ -486,17 +427,17 @@ func (controller *playgroundController) SaveSnippet(ctx context.Context, req *pb
 	for _, file := range req.Files {
 		if file.Content == "" {
 			logger.Error("SaveSnippet(): entity is empty")
-			return nil, cerrors.InvalidArgumentError(errorTitleSaveSnippet, "Snippet must have some content")
+			return nil, errors.InvalidArgumentError(errorTitleSaveSnippet, "Snippet must have some content")
 		}
 		maxSnippetSize := controller.props.MaxSnippetSize
 		if len(file.Content) > int(maxSnippetSize) {
 			logger.Errorf("SaveSnippet(): entity is too large. Max entity size: %d symbols", maxSnippetSize)
-			return nil, cerrors.InvalidArgumentError(errorTitleSaveSnippet, "Snippet size is more than %d symbols", maxSnippetSize)
+			return nil, errors.InvalidArgumentError(errorTitleSaveSnippet, "Snippet size is more than %d symbols", maxSnippetSize)
 		}
 		fileEntity, err := controller.entityMapper.ToFileEntity(req, file)
 		if err != nil {
 			logger.Errorf("SaveSnippet(): file has wrong properties, err: %s", err.Error())
-			return nil, cerrors.InvalidArgumentError(errorTitleSaveSnippet, "File content is invalid")
+			return nil, errors.InvalidArgumentError(errorTitleSaveSnippet, "File content is invalid")
 		}
 		snippet.Files = append(snippet.Files, fileEntity)
 	}
@@ -504,11 +445,11 @@ func (controller *playgroundController) SaveSnippet(ctx context.Context, req *pb
 	id, err := snippet.ID()
 	if err != nil {
 		logger.Errorf("SaveSnippet(): ID(): error during ID generation: %s", err.Error())
-		return nil, cerrors.InternalError(errorTitleSaveSnippet, "Failed to generate ID")
+		return nil, errors.InternalError(errorTitleSaveSnippet, "Failed to generate ID")
 	}
 	if err = controller.db.PutSnippet(ctx, id, snippet); err != nil {
 		logger.Errorf("SaveSnippet(): PutSnippet(): error during entity saving: %s", err.Error())
-		return nil, cerrors.InternalError(errorTitleSaveSnippet, "Failed to save a snippet entity")
+		return nil, errors.InternalError(errorTitleSaveSnippet, "Failed to save a snippet entity")
 	}
 
 	response := pb.SaveSnippetResponse{Id: id}
@@ -519,15 +460,12 @@ func (controller *playgroundController) SaveSnippet(ctx context.Context, req *pb
 func (controller *playgroundController) GetSnippet(ctx context.Context, info *pb.GetSnippetRequest) (*pb.GetSnippetResponse, error) {
 	if controller.db == nil {
 		logger.Error("GetSnippet(): the runner is trying to read the snippet")
-		return nil, cerrors.InvalidArgumentError(errorTitleGetSnippet, "The runner doesn't support snippets")
+		return nil, errors.InvalidArgumentError(errorTitleGetSnippet, "The runner doesn't support snippets")
 	}
 	snippet, err := controller.db.GetSnippet(ctx, info.GetId())
 	if err != nil {
 		logger.Errorf("GetSnippet(): error during getting the snippet: %s", err.Error())
-		if errors.Is(err, datastore.ErrNoSuchEntity) {
-			return nil, cerrors.NotFoundError(errorTitleGetSnippet, resourceNotFoundErrMsg)
-		}
-		return nil, cerrors.InternalError(errorTitleGetSnippet, "Failed to retrieve the snippet")
+		return nil, errors.InternalError(errorTitleGetSnippet, "Failed to retrieve the snippet")
 	}
 
 	response := pb.GetSnippetResponse{
@@ -538,7 +476,7 @@ func (controller *playgroundController) GetSnippet(ctx context.Context, info *pb
 	files, err := controller.db.GetFiles(ctx, info.GetId(), snippet.NumberOfFiles)
 	if err != nil {
 		logger.Errorf("GetSnippet(): GetFiles(): error during getting files: %s", err.Error())
-		return nil, cerrors.InternalError(errorTitleGetSnippet, "Failed to retrieve files")
+		return nil, errors.InternalError(errorTitleGetSnippet, "Failed to retrieve files")
 	}
 	for _, file := range files {
 		response.Files = append(response.Files, &pb.SnippetFile{

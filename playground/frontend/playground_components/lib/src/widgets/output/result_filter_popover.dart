@@ -52,7 +52,7 @@ class ResultFilterPopover extends StatelessWidget {
                     vertical: BeamSizes.size4,
                   ),
                   child: AnimatedBuilder(
-                    animation: playgroundController.outputTypeController,
+                    animation: playgroundController,
                     builder: (context, child) => Row(
                       children: [
                         ResultFilterBubble(

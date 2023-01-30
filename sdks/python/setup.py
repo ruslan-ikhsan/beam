@@ -228,6 +228,8 @@ if __name__ == '__main__':
           'apache_beam/utils/windowed_value.py',
       ]),
       install_requires= protobuf_dependency + [
+        # Avro 1.9.2 for python3 was broken.
+        # The issue was fixed in version 1.9.2.1
         'crcmod>=1.7,<2.0',
         'orjson<4.0',
         # Dill doesn't have forwards-compatibility guarantees within minor
@@ -240,12 +242,12 @@ if __name__ == '__main__':
         # and at runtime, therefore bounds need to be tight.
         # To avoid depending on an old dependency, update the minor version on
         # every Beam release, see: https://github.com/apache/beam/issues/23119
-        'cloudpickle~=2.2.1',
+        'cloudpickle~=2.2.0',
         'fastavro>=0.23.6,<2',
         'fasteners>=0.3,<1.0',
         'grpcio>=1.33.1,!=1.48.0,<2',
         'hdfs>=2.1.0,<3.0.0',
-        'httplib2>=0.8,<0.22.0',
+        'httplib2>=0.8,<0.21.0',
         'numpy>=1.14.3,<1.23.0',
         'objsize>=0.6.1,<0.7.0',
         'pymongo>=3.8.0,<4.0.0',
@@ -272,6 +274,7 @@ if __name__ == '__main__':
           ],
           'test': [
             'freezegun>=0.3.12',
+            'hypothesis<7',
             'joblib>=1.0.1',
             'mock>=1.0.1,<3.0.0',
             'pandas<2.0.0',
@@ -288,7 +291,6 @@ if __name__ == '__main__':
             'psycopg2-binary>=2.8.5,<3.0.0',
             'testcontainers[mysql]>=3.0.3,<4.0.0',
             'cryptography>=36.0.0',
-            'hypothesis>5.0.0,<=7.0.0',
           ],
           'gcp': [
             'cachetools>=3.1.0,<5',
@@ -303,7 +305,7 @@ if __name__ == '__main__':
             'google-cloud-pubsublite>=1.2.0,<2',
             # GCP packages required by tests
             'google-cloud-bigquery>=1.6.0,<4',
-            'google-cloud-bigquery-storage>=2.6.3,<2.17',
+            'google-cloud-bigquery-storage>=2.6.3,<2.14',
             'google-cloud-core>=0.28.1,<3',
             'google-cloud-bigtable>=0.31.1,<2',
             'google-cloud-spanner>=3.0.0,<4',
@@ -330,7 +332,7 @@ if __name__ == '__main__':
           'interactive_test': [
             # notebok utils
             'nbformat>=5.0.5,<6',
-            'nbconvert>=6.2.0,<8',
+            'nbconvert>=6.2.0,<7',
             # headless chrome based integration tests
             'needle>=0.5.0,<1',
             'chromedriver-binary>=100,<101',
@@ -347,12 +349,8 @@ if __name__ == '__main__':
         # with python 3.10 leading to incorrect stacktrace.
         # This can be removed once dill is updated to version > 0.3.5.1
         # Issue: https://github.com/apache/beam/issues/23566
-        # Exclude 1.5.0 and 1.5.1 because of
-        # https://github.com/pandas-dev/pandas/issues/45725
-          'dataframe': [
-            'pandas>=1.0,<1.6,!=1.5.0,!=1.5.1;python_version<"3.10"',
-            'pandas>=1.4.3,<1.6,!=1.5.0,!=1.5.1;python_version>="3.10"'
-          ],
+          'dataframe': ['pandas>=1.0,<1.5;python_version<"3.10"',
+                        'pandas>=1.4.3,<1.5;python_version>="3.10"'],
           'dask': [
             'dask >= 2022.6',
             'distributed >= 2022.6',

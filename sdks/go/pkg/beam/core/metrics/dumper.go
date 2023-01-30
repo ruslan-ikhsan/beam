@@ -37,7 +37,7 @@ func DumpToLog(ctx context.Context) {
 
 // DumpToLogFromStore dumps the metrics in the provided Store to beam.Log.
 func DumpToLogFromStore(ctx context.Context, store *Store) {
-	dumperExtractor(store, func(format string, args ...any) {
+	dumperExtractor(store, func(format string, args ...interface{}) {
 		log.Errorf(ctx, format, args...)
 	})
 }
@@ -57,13 +57,13 @@ func DumpToOutFromContext(ctx context.Context) {
 // DumpToOutFromStore is a debugging function that outputs all metrics
 // available locally to std out directly from the store.
 func DumpToOutFromStore(store *Store) {
-	dumperExtractor(store, func(format string, args ...any) {
+	dumperExtractor(store, func(format string, args ...interface{}) {
 		fmt.Printf(format+"\n", args...)
 	})
 }
 
-func dumperExtractor(store *Store, p func(format string, args ...any)) {
-	m := make(map[Labels]any)
+func dumperExtractor(store *Store, p func(format string, args ...interface{})) {
+	m := make(map[Labels]interface{})
 	e := &Extractor{
 		SumInt64: func(l Labels, v int64) {
 			m[l] = &counter{value: v}
@@ -80,7 +80,7 @@ func dumperExtractor(store *Store, p func(format string, args ...any)) {
 	dumpTo(m, p)
 }
 
-func dumpTo(store map[Labels]any, p func(format string, args ...any)) {
+func dumpTo(store map[Labels]interface{}, p func(format string, args ...interface{})) {
 	var ls []Labels
 	for l := range store {
 		ls = append(ls, l)

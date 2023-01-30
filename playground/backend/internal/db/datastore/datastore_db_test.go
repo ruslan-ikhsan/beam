@@ -22,8 +22,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-
 	pb "beam.apache.org/playground/backend/internal/api/v1"
 	"beam.apache.org/playground/backend/internal/constants"
 	"beam.apache.org/playground/backend/internal/db/entity"
@@ -323,7 +321,7 @@ func TestDatastore_GetFiles(t *testing.T) {
 		},
 		{
 			name:    "GetFiles() in the usual case",
-			prepare: func() { saveSnippet("MOCK_ID", pb.Sdk_SDK_GO.String(), false) },
+			prepare: func() { saveSnippet("MOCK_ID", pb.Sdk_SDK_GO.String()) },
 			args:    args{ctx: ctx, snipId: "MOCK_ID", numberOfFiles: 1},
 			wantErr: false,
 			cleanData: func() {
@@ -403,13 +401,9 @@ func TestDatastore_GetCatalog(t *testing.T) {
 			name: "Getting catalog in the usual case",
 			prepare: func() {
 				exampleId := utils.GetIDWithDelimiter(pb.Sdk_SDK_JAVA.String(), "MOCK_EXAMPLE")
-				saveExample("MOCK_EXAMPLE", pb.Sdk_SDK_JAVA.String(), constants.ExampleOrigin)
-				saveSnippet(exampleId, pb.Sdk_SDK_JAVA.String(), false)
+				saveExample("MOCK_EXAMPLE", pb.Sdk_SDK_JAVA.String())
+				saveSnippet(exampleId, pb.Sdk_SDK_JAVA.String())
 				savePCObjs(exampleId)
-				exampleIdDifferentOrigin := utils.GetIDWithDelimiter(pb.Sdk_SDK_GO.String(), "MOCK_EXAMPLE_DIFFERENT_ORIGIN")
-				saveExample("MOCK_EXAMPLE_DIFFERENT_ORIGIN", pb.Sdk_SDK_GO.String(), "MOCK_ORIGIN")
-				saveSnippet(exampleIdDifferentOrigin, pb.Sdk_SDK_GO.String(), false)
-				savePCObjs(exampleIdDifferentOrigin)
 			},
 			args: args{
 				ctx: ctx,
@@ -431,11 +425,6 @@ func TestDatastore_GetCatalog(t *testing.T) {
 				test_cleaner.CleanFiles(ctx, t, exampleId, 1)
 				test_cleaner.CleanSnippet(ctx, t, exampleId)
 				test_cleaner.CleanExample(ctx, t, exampleId)
-				exampleIdDifferentOrigin := utils.GetIDWithDelimiter(pb.Sdk_SDK_JAVA.String(), "MOCK_EXAMPLE_DIFFERENT_ORIGIN")
-				test_cleaner.CleanPCObjs(ctx, t, exampleIdDifferentOrigin)
-				test_cleaner.CleanFiles(ctx, t, exampleIdDifferentOrigin, 1)
-				test_cleaner.CleanSnippet(ctx, t, exampleIdDifferentOrigin)
-				test_cleaner.CleanExample(ctx, t, exampleIdDifferentOrigin)
 			},
 		},
 	}
@@ -448,9 +437,6 @@ func TestDatastore_GetCatalog(t *testing.T) {
 				t.Errorf("GetCatalog() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if err == nil {
-				if len(catalog) != 1 {
-					t.Error("GetCatalog() unexpected result: query returned too many objects")
-				}
 				if catalog[0].GetSdk() != pb.Sdk_SDK_JAVA {
 					t.Error("GetCatalog() unexpected result: wrong sdk")
 				}
@@ -494,8 +480,8 @@ func TestDatastore_GetDefaultExamples(t *testing.T) {
 			prepare: func() {
 				for sdk := range pb.Sdk_value {
 					exampleId := utils.GetIDWithDelimiter(sdk, "MOCK_DEFAULT_EXAMPLE")
-					saveExample("MOCK_DEFAULT_EXAMPLE", sdk, constants.ExampleOrigin)
-					saveSnippet(exampleId, sdk, false)
+					saveExample("MOCK_DEFAULT_EXAMPLE", sdk)
+					saveSnippet(exampleId, sdk)
 					savePCObjs(exampleId)
 				}
 			},
@@ -563,8 +549,8 @@ func TestDatastore_GetExample(t *testing.T) {
 			name: "Getting an example in the usual case",
 			prepare: func() {
 				exampleId := utils.GetIDWithDelimiter(pb.Sdk_SDK_JAVA.String(), "MOCK_EXAMPLE")
-				saveExample("MOCK_EXAMPLE", pb.Sdk_SDK_JAVA.String(), constants.ExampleOrigin)
-				saveSnippet(exampleId, pb.Sdk_SDK_JAVA.String(), false)
+				saveExample("MOCK_EXAMPLE", pb.Sdk_SDK_JAVA.String())
+				saveSnippet(exampleId, pb.Sdk_SDK_JAVA.String())
 				savePCObjs(exampleId)
 			},
 			args: args{
@@ -622,11 +608,11 @@ func TestDatastore_GetExampleCode(t *testing.T) {
 		clean   func()
 	}{
 		{
-			name: "Getting multifile example code",
+			name: "Getting an example code in the usual case",
 			prepare: func() {
 				exampleId := utils.GetIDWithDelimiter(pb.Sdk_SDK_JAVA.String(), "MOCK_EXAMPLE")
-				saveExample("MOCK_EXAMPLE", pb.Sdk_SDK_JAVA.String(), constants.ExampleOrigin)
-				saveSnippet(exampleId, pb.Sdk_SDK_JAVA.String(), true /* multifile */)
+				saveExample("MOCK_EXAMPLE", pb.Sdk_SDK_JAVA.String())
+				saveSnippet(exampleId, pb.Sdk_SDK_JAVA.String())
 				savePCObjs(exampleId)
 			},
 			args: args{
@@ -637,7 +623,7 @@ func TestDatastore_GetExampleCode(t *testing.T) {
 			clean: func() {
 				exampleId := utils.GetIDWithDelimiter(pb.Sdk_SDK_JAVA.String(), "MOCK_EXAMPLE")
 				test_cleaner.CleanPCObjs(ctx, t, exampleId)
-				test_cleaner.CleanFiles(ctx, t, exampleId, 2)
+				test_cleaner.CleanFiles(ctx, t, exampleId, 1)
 				test_cleaner.CleanSnippet(ctx, t, exampleId)
 				test_cleaner.CleanExample(ctx, t, exampleId)
 			},
@@ -647,16 +633,14 @@ func TestDatastore_GetExampleCode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.prepare()
-			files, err := datastoreDb.GetExampleCode(tt.args.ctx, tt.args.exampleId)
+			code, err := datastoreDb.GetExampleCode(tt.args.ctx, tt.args.exampleId)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetExampleCode() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if err == nil {
-				expected := []*entity.FileEntity{
-					{Name: "MOCK_NAME", Content: "MOCK_CONTENT", IsMain: true, CntxLine: 32},
-					{Name: "MOCK_IMPORT_NAME", Content: "MOCK_IMPORT_CONTENT", IsMain: false, CntxLine: 33},
+				if code != "MOCK_CONTENT" {
+					t.Errorf("GetExampleCode() unexpected result: wrong precompiled obj")
 				}
-				assert.Equal(t, expected, files)
 				tt.clean()
 			}
 		})
@@ -679,8 +663,8 @@ func TestDatastore_GetExampleOutput(t *testing.T) {
 			name: "Getting an example output in the usual case",
 			prepare: func() {
 				exampleId := utils.GetIDWithDelimiter(pb.Sdk_SDK_JAVA.String(), "MOCK_EXAMPLE")
-				saveExample("MOCK_EXAMPLE", pb.Sdk_SDK_JAVA.String(), constants.ExampleOrigin)
-				saveSnippet(exampleId, pb.Sdk_SDK_JAVA.String(), false)
+				saveExample("MOCK_EXAMPLE", pb.Sdk_SDK_JAVA.String())
+				saveSnippet(exampleId, pb.Sdk_SDK_JAVA.String())
 				savePCObjs(exampleId)
 			},
 			args: args{
@@ -731,8 +715,8 @@ func TestDatastore_GetExampleLogs(t *testing.T) {
 			name: "Getting an example logs in the usual case",
 			prepare: func() {
 				exampleId := utils.GetIDWithDelimiter(pb.Sdk_SDK_JAVA.String(), "MOCK_EXAMPLE")
-				saveExample("MOCK_EXAMPLE", pb.Sdk_SDK_JAVA.String(), constants.ExampleOrigin)
-				saveSnippet(exampleId, pb.Sdk_SDK_JAVA.String(), false)
+				saveExample("MOCK_EXAMPLE", pb.Sdk_SDK_JAVA.String())
+				saveSnippet(exampleId, pb.Sdk_SDK_JAVA.String())
 				savePCObjs(exampleId)
 			},
 			args: args{
@@ -783,8 +767,8 @@ func TestDatastore_GetExampleGraph(t *testing.T) {
 			name: "Getting an example graph in the usual case",
 			prepare: func() {
 				exampleId := utils.GetIDWithDelimiter(pb.Sdk_SDK_JAVA.String(), "MOCK_EXAMPLE")
-				saveExample("MOCK_EXAMPLE", pb.Sdk_SDK_JAVA.String(), constants.ExampleOrigin)
-				saveSnippet(exampleId, pb.Sdk_SDK_JAVA.String(), false)
+				saveExample("MOCK_EXAMPLE", pb.Sdk_SDK_JAVA.String())
+				saveSnippet(exampleId, pb.Sdk_SDK_JAVA.String())
 				savePCObjs(exampleId)
 			},
 			args: args{
@@ -952,7 +936,7 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func saveExample(name, sdk string, origin string) {
+func saveExample(name, sdk string) {
 	_, _ = datastoreDb.Client.Put(ctx, utils.GetExampleKey(ctx, sdk, name), &entity.ExampleEntity{
 		Name:   name,
 		Sdk:    utils.GetSdkKey(ctx, sdk),
@@ -960,13 +944,13 @@ func saveExample(name, sdk string, origin string) {
 		Cats:   []string{"MOCK_CATEGORY"},
 		Path:   "MOCK_PATH",
 		Type:   pb.PrecompiledObjectType_PRECOMPILED_OBJECT_TYPE_EXAMPLE.String(),
-		Origin: origin,
+		Origin: constants.ExampleOrigin,
 		SchVer: utils.GetSchemaVerKey(ctx, "MOCK_VERSION"),
 	})
 }
 
-func saveSnippet(snipId, sdk string, isMultifile bool) {
-	snippet := &entity.Snippet{
+func saveSnippet(snipId, sdk string) {
+	_ = datastoreDb.PutSnippet(ctx, snipId, &entity.Snippet{
 		IDMeta: &entity.IDMeta{
 			Salt:     "MOCK_SALT",
 			IdLength: 11,
@@ -975,7 +959,7 @@ func saveSnippet(snipId, sdk string, isMultifile bool) {
 			Sdk:           utils.GetSdkKey(ctx, sdk),
 			PipeOpts:      "MOCK_OPTIONS",
 			Origin:        constants.ExampleOrigin,
-			NumberOfFiles: map[bool]int{false: 1, true: 2}[isMultifile],
+			NumberOfFiles: 1,
 			Complexity:    pb.Complexity_COMPLEXITY_MEDIUM.String(),
 		},
 		Files: []*entity.FileEntity{{
@@ -984,17 +968,7 @@ func saveSnippet(snipId, sdk string, isMultifile bool) {
 			CntxLine: 32,
 			IsMain:   true,
 		}},
-	}
-	if isMultifile {
-		snippet.Files = append(snippet.Files, &entity.FileEntity{
-			Name:     "MOCK_IMPORT_NAME",
-			Content:  "MOCK_IMPORT_CONTENT",
-			CntxLine: 33,
-			IsMain:   false,
-		})
-	}
-
-	_ = datastoreDb.PutSnippet(ctx, snipId, snippet)
+	})
 }
 
 func savePCObjs(exampleId string) {

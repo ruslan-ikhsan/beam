@@ -98,7 +98,7 @@ public final class UnboundedScheduledExecutorService implements ScheduledExecuto
     }
 
     /** Creates a periodic action with given nanoTime-based initial trigger time and period. */
-    @SuppressWarnings("argument")
+    @SuppressWarnings("argument.type.incompatible")
     ScheduledFutureTask(Runnable r, @Nullable V result, long triggerTime, long period) {
       super(r, result);
       this.time = triggerTime;
@@ -247,7 +247,7 @@ public final class UnboundedScheduledExecutorService implements ScheduledExecuto
 
           @Override
           /* UnboundedScheduledExecutorService is the only caller after it has been initialized.*/
-          @SuppressWarnings("method.invocation")
+          @SuppressWarnings("method.invocation.invalid")
           public void execute(Runnable command) {
             // These are already guaranteed to be a ScheduledFutureTask so there is no need to wrap
             // it in another ScheduledFutureTask.
@@ -366,7 +366,7 @@ public final class UnboundedScheduledExecutorService implements ScheduledExecuto
 
   @Override
   /* Ignore improper flag since FB detects that ScheduledExecutorService can't have nullable V. */
-  @SuppressWarnings("override.return")
+  @SuppressWarnings("override.return.invalid")
   public <@Nullable @KeyForBottom T> Future<T> submit(Runnable command, T result) {
     if (command == null) {
       throw new NullPointerException();
@@ -378,7 +378,7 @@ public final class UnboundedScheduledExecutorService implements ScheduledExecuto
 
   @Override
   /* Ignore improper flag since FB detects that ScheduledExecutorService can't have nullable V. */
-  @SuppressWarnings({"override.param", "override.return"})
+  @SuppressWarnings({"override.param.invalid", "override.return.invalid"})
   public <@Nullable @KeyForBottom T> Future<T> submit(Callable<T> command) {
     if (command == null) {
       throw new NullPointerException();
@@ -418,7 +418,7 @@ public final class UnboundedScheduledExecutorService implements ScheduledExecuto
   }
 
   @Override
-  public ScheduledFuture<@Nullable ?> schedule(Runnable command, long delay, TimeUnit unit) {
+  public ScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit) {
     if (command == null || unit == null) {
       throw new NullPointerException();
     }
@@ -430,7 +430,7 @@ public final class UnboundedScheduledExecutorService implements ScheduledExecuto
 
   @Override
   /* Ignore improper flag since FB detects that ScheduledExecutorService can't have nullable V. */
-  @SuppressWarnings({"override.param", "override.return"})
+  @SuppressWarnings({"override.param.invalid", "override.return.invalid"})
   public <@Nullable @KeyForBottom V> ScheduledFuture<V> schedule(
       Callable<V> callable, long delay, TimeUnit unit) {
     if (callable == null || unit == null) {
@@ -442,7 +442,7 @@ public final class UnboundedScheduledExecutorService implements ScheduledExecuto
   }
 
   @Override
-  public ScheduledFuture<@Nullable ?> scheduleAtFixedRate(
+  public ScheduledFuture<?> scheduleAtFixedRate(
       Runnable command, long initialDelay, long period, TimeUnit unit) {
     if (command == null || unit == null) {
       throw new NullPointerException();
@@ -458,7 +458,7 @@ public final class UnboundedScheduledExecutorService implements ScheduledExecuto
   }
 
   @Override
-  public ScheduledFuture<@Nullable ?> scheduleWithFixedDelay(
+  public ScheduledFuture<?> scheduleWithFixedDelay(
       Runnable command, long initialDelay, long delay, TimeUnit unit) {
     if (command == null || unit == null) {
       throw new NullPointerException();

@@ -18,16 +18,20 @@
 
 import 'dart:async';
 
-import '../models/unit_content.dart';
-import 'cache.dart';
+import 'package:flutter/widgets.dart';
 
-class UnitContentCache extends Cache {
-  UnitContentCache({
-    required super.client,
-  });
+import '../models/unit_content.dart';
+import '../repositories/client/client.dart';
+
+class UnitContentCache extends ChangeNotifier {
+  final TobClient client;
 
   final _unitContents = <String, Map<String, UnitContentModel>>{};
   final _futures = <String, Map<String, Future<UnitContentModel>>>{};
+
+  UnitContentCache({
+    required this.client,
+  });
 
   UnitContentModel? getUnitContent(String sdkId, String unitId) {
     final future = _futures[sdkId]?[unitId];

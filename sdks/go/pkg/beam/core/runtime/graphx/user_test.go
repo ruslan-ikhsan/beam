@@ -85,7 +85,7 @@ func argAndRet(x string) string { return x }
 func TestEncodeDecodeFn(t *testing.T) {
 	var tests = []struct {
 		name string
-		inFn any
+		inFn interface{}
 	}{
 		{
 			"no arg or return",

@@ -25,8 +25,6 @@ import (
 	"github.com/google/uuid"
 
 	pb "beam.apache.org/playground/backend/internal/api/v1"
-	"beam.apache.org/playground/backend/internal/db/entity"
-	"beam.apache.org/playground/backend/internal/emulators"
 )
 
 const (
@@ -51,9 +49,8 @@ type LifeCyclePaths struct {
 
 // LifeCycle is used for preparing folders and files to process code for one code processing request.
 type LifeCycle struct {
-	folderGlobs         []string // folders that should be created to process code
-	Paths               LifeCyclePaths
-	emulatorMockCluster emulators.EmulatorMockCluster
+	folderGlobs []string // folders that should be created to process code
+	Paths       LifeCyclePaths
 }
 
 // NewLifeCycle returns a corresponding LifeCycle depending on the given SDK.
@@ -94,21 +91,16 @@ func (lc *LifeCycle) DeleteFolders() error {
 	return nil
 }
 
-// CreateSourceCodeFiles creates an executable file (i.e. file.{sourceFileExtension}).
-func (lc *LifeCycle) CreateSourceCodeFiles(sources []entity.FileEntity) error {
+// CreateSourceCodeFile creates an executable file (i.e. file.{sourceFileExtension}).
+func (lc *LifeCycle) CreateSourceCodeFile(code string) error {
 	if _, err := os.Stat(lc.Paths.AbsoluteSourceFileFolderPath); os.IsNotExist(err) {
 		return err
 	}
 
-	for _, src := range sources {
-		filePath := lc.Paths.AbsoluteSourceFilePath
-		if !src.IsMain {
-			filePath = lc.Paths.AbsoluteSourceFileFolderPath + "/" + src.Name
-		}
-		err := os.WriteFile(filePath, []byte(src.Content), fileMode)
-		if err != nil {
-			return err
-		}
+	filePath := lc.Paths.AbsoluteSourceFilePath
+	err := os.WriteFile(filePath, []byte(code), fileMode)
+	if err != nil {
+		return err
 	}
 	return nil
 }

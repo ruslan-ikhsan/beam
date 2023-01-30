@@ -728,8 +728,8 @@ public class Neo4jIO {
       cleanUpDriverSession();
     }
 
-    @Teardown
-    public void tearDown() {
+    @Override
+    protected void finalize() {
       cleanUpDriverSession();
     }
 

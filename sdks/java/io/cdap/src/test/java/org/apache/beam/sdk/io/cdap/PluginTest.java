@@ -64,8 +64,8 @@ public class PluginTest {
   @Test
   public void testBuildingSourcePluginWithCDAPClasses() {
     try {
-      Plugin<Schema, MapWritable> serviceNowSourcePlugin =
-          Plugin.<Schema, MapWritable>createBatch(
+      Plugin serviceNowSourcePlugin =
+          Plugin.createBatch(
                   ServiceNowSource.class,
                   ServiceNowInputFormat.class,
                   SourceInputFormatProvider.class)
@@ -92,8 +92,8 @@ public class PluginTest {
 
   @Test
   public void testSettingPluginType() {
-    Plugin<Schema, MapWritable> serviceNowSourcePlugin =
-        Plugin.<Schema, MapWritable>createBatch(
+    Plugin serviceNowSourcePlugin =
+        Plugin.createBatch(
                 ServiceNowSource.class,
                 ServiceNowInputFormat.class,
                 SourceInputFormatProvider.class)
@@ -107,8 +107,8 @@ public class PluginTest {
   @SuppressWarnings("UnusedVariable")
   public void testSettingPluginTypeFailed() {
     try {
-      Plugin<Schema, MapWritable> serviceNowSourcePlugin =
-          Plugin.<Schema, MapWritable>createBatch(Object.class, Object.class, Object.class)
+      Plugin serviceNowSourcePlugin =
+          Plugin.createBatch(Object.class, Object.class, Object.class)
               .withConfig(serviceNowSourceConfig)
               .withHadoopConfiguration(Schema.class, MapWritable.class);
       fail("This should have thrown an exception");

@@ -30,7 +30,6 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,8 +38,6 @@ import org.apache.beam.sdk.coders.Coder;
 import org.apache.beam.sdk.coders.ListCoder;
 import org.apache.beam.sdk.coders.StringUtf8Coder;
 import org.apache.beam.sdk.io.range.OffsetRange;
-import org.apache.beam.sdk.schemas.AutoValueSchema;
-import org.apache.beam.sdk.schemas.annotations.DefaultSchema;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.Filter;
@@ -56,7 +53,6 @@ import org.apache.beam.sdk.util.Preconditions;
 import org.apache.beam.sdk.values.PBegin;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionView;
-import org.apache.beam.sdk.values.Row;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.commons.dbcp2.DelegatingStatement;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -172,14 +168,6 @@ public class SingleStoreIO {
     return new AutoValue_SingleStoreIO_Read.Builder<T>().setOutputParallelization(true).build();
   }
 
-  /** Read Beam {@link Row}s from a SingleStoreDB datasource. */
-  public static Read<Row> readRows() {
-    return new AutoValue_SingleStoreIO_Read.Builder<Row>()
-        .setRowMapper(new SingleStoreDefaultRowMapper())
-        .setOutputParallelization(true)
-        .build();
-  }
-
   /**
    * Like {@link #read}, but executes multiple instances of the query on the same table for each
    * database partition.
@@ -191,29 +179,12 @@ public class SingleStoreIO {
   }
 
   /**
-   * Like {@link #readRows}, but executes multiple instances of the query on the same table for each
-   * database partition.
-   */
-  public static ReadWithPartitions<Row> readWithPartitionsRows() {
-    return new AutoValue_SingleStoreIO_ReadWithPartitions.Builder<Row>()
-        .setRowMapper(new SingleStoreDefaultRowMapper())
-        .build();
-  }
-
-  /**
    * Write data to a SingleStoreDB datasource.
    *
    * @param <T> Type of the data to be written.
    */
   public static <T> Write<T> write() {
     return new AutoValue_SingleStoreIO_Write.Builder<T>().build();
-  }
-
-  /** Write Beam {@link Row}s to a SingleStoreDB datasource. */
-  public static Write<Row> writeRows() {
-    return new AutoValue_SingleStoreIO_Write.Builder<Row>()
-        .setUserDataMapper(new SingleStoreDefaultUserDataMapper())
-        .build();
   }
 
   /**
@@ -223,19 +194,6 @@ public class SingleStoreIO {
   @FunctionalInterface
   public interface RowMapper<T> extends Serializable {
     T mapRow(ResultSet resultSet) throws Exception;
-  }
-
-  /**
-   * A RowMapper that requires initialization. init method is called during pipeline construction
-   * time.
-   */
-  public interface RowMapperWithInit<T> extends RowMapper<T> {
-    void init(ResultSetMetaData resultSetMetaData) throws Exception;
-  }
-
-  /** A RowMapper that provides a Coder for resulting PCollection. */
-  public interface RowMapperWithCoder<T> extends RowMapper<T> {
-    Coder<T> getCoder() throws Exception;
   }
 
   /**
@@ -261,7 +219,6 @@ public class SingleStoreIO {
    * A POJO describing a SingleStoreDB {@link DataSource} by providing all properties needed to
    * create it.
    */
-  @DefaultSchema(AutoValueSchema.class)
   @AutoValue
   public abstract static class DataSourceConfiguration implements Serializable {
     abstract @Nullable String getEndpoint();
@@ -449,15 +406,6 @@ public class SingleStoreIO {
       Preconditions.checkArgumentNotNull(rowMapper, "withRowMapper() is required");
       String actualQuery = SingleStoreUtil.getSelectQuery(getTable(), getQuery());
 
-      if (rowMapper instanceof RowMapperWithInit) {
-        try {
-          ((RowMapperWithInit<?>) rowMapper)
-              .init(getResultSetMetadata(dataSourceConfiguration, actualQuery));
-        } catch (Exception e) {
-          throw new SingleStoreRowMapperInitializationException(e);
-        }
-      }
-
       Coder<T> coder =
           SingleStoreUtil.inferCoder(
               rowMapper,
@@ -482,12 +430,6 @@ public class SingleStoreIO {
       }
 
       return output;
-    }
-
-    public static class SingleStoreRowMapperInitializationException extends RuntimeException {
-      SingleStoreRowMapperInitializationException(Throwable cause) {
-        super("Failed to initialize RowMapper", cause);
-      }
     }
 
     private static class ReadFn<ParameterT, OutputT> extends DoFn<ParameterT, OutputT> {
@@ -603,6 +545,8 @@ public class SingleStoreIO {
 
     abstract @Nullable RowMapper<T> getRowMapper();
 
+    abstract @Nullable Integer getInitialNumReaders();
+
     abstract Builder<T> toBuilder();
 
     @AutoValue.Builder
@@ -615,6 +559,8 @@ public class SingleStoreIO {
       abstract Builder<T> setTable(String table);
 
       abstract Builder<T> setRowMapper(RowMapper<T> rowMapper);
+
+      abstract Builder<T> setInitialNumReaders(Integer initialNumReaders);
 
       abstract ReadWithPartitions<T> build();
     }
@@ -639,6 +585,12 @@ public class SingleStoreIO {
       return toBuilder().setRowMapper(rowMapper).build();
     }
 
+    /** Pre-split initial restriction and start initialNumReaders reading at the very beginning. */
+    public ReadWithPartitions<T> withInitialNumReaders(Integer initialNumReaders) {
+      checkNotNull(initialNumReaders, "initialNumReaders can not be null");
+      return toBuilder().setInitialNumReaders(initialNumReaders).build();
+    }
+
     @Override
     public PCollection<T> expand(PBegin input) {
       DataSourceConfiguration dataSourceConfiguration = getDataSourceConfiguration();
@@ -651,16 +603,11 @@ public class SingleStoreIO {
       RowMapper<T> rowMapper = getRowMapper();
       Preconditions.checkArgumentNotNull(rowMapper, "withRowMapper() is required");
 
-      String actualQuery = SingleStoreUtil.getSelectQuery(getTable(), getQuery());
+      int initialNumReaders = SingleStoreUtil.getArgumentWithDefault(getInitialNumReaders(), 1);
+      checkArgument(
+          initialNumReaders >= 1, "withInitialNumReaders() should be greater or equal to 1");
 
-      if (rowMapper instanceof RowMapperWithInit) {
-        try {
-          ((RowMapperWithInit<?>) rowMapper)
-              .init(getResultSetMetadata(dataSourceConfiguration, actualQuery));
-        } catch (Exception e) {
-          throw new Read.SingleStoreRowMapperInitializationException(e);
-        }
-      }
+      String actualQuery = SingleStoreUtil.getSelectQuery(getTable(), getQuery());
 
       Coder<T> coder =
           SingleStoreUtil.inferCoder(
@@ -674,7 +621,11 @@ public class SingleStoreIO {
           .apply(
               ParDo.of(
                   new ReadWithPartitions.ReadWithPartitionsFn<>(
-                      dataSourceConfiguration, actualQuery, database, rowMapper)))
+                      dataSourceConfiguration,
+                      actualQuery,
+                      database,
+                      rowMapper,
+                      initialNumReaders)))
           .setCoder(coder);
     }
 
@@ -684,16 +635,19 @@ public class SingleStoreIO {
       String query;
       String database;
       RowMapper<OutputT> rowMapper;
+      int initialNumReaders;
 
       ReadWithPartitionsFn(
           DataSourceConfiguration dataSourceConfiguration,
           String query,
           String database,
-          RowMapper<OutputT> rowMapper) {
+          RowMapper<OutputT> rowMapper,
+          int initialNumReaders) {
         this.dataSourceConfiguration = dataSourceConfiguration;
         this.query = query;
         this.database = database;
         this.rowMapper = rowMapper;
+        this.initialNumReaders = initialNumReaders;
       }
 
       @ProcessElement
@@ -736,8 +690,19 @@ public class SingleStoreIO {
           @Element ParameterT element,
           @Restriction OffsetRange range,
           OutputReceiver<OffsetRange> receiver) {
-        for (long i = range.getFrom(); i < range.getTo(); i++) {
-          receiver.output(new OffsetRange(i, i + 1));
+        long numPartitions = range.getTo() - range.getFrom();
+        checkArgument(
+            initialNumReaders <= numPartitions,
+            "withInitialNumReaders() should not be greater then number of partitions in the database.\n"
+                + String.format(
+                    "InitialNumReaders is %d, number of partitions in the database is %d",
+                    initialNumReaders, range.getTo()));
+
+        for (int i = 0; i < initialNumReaders; i++) {
+          receiver.output(
+              new OffsetRange(
+                  range.getFrom() + numPartitions * i / initialNumReaders,
+                  range.getFrom() + numPartitions * (i + 1) / initialNumReaders));
         }
       }
 
@@ -779,28 +744,7 @@ public class SingleStoreIO {
       builder.addIfNotNull(DisplayData.item("table", getTable()));
       builder.addIfNotNull(
           DisplayData.item("rowMapper", SingleStoreUtil.getClassNameOrNull(getRowMapper())));
-    }
-  }
-
-  private static ResultSetMetaData getResultSetMetadata(
-      DataSourceConfiguration dataSourceConfiguration, String query) throws Exception {
-    DataSource dataSource = dataSourceConfiguration.getDataSource();
-    Connection conn = dataSource.getConnection();
-    try {
-      PreparedStatement stmt =
-          conn.prepareStatement(String.format("SELECT * FROM (%s) LIMIT 0", query));
-      try {
-        ResultSetMetaData md = stmt.getMetaData();
-        if (md == null) {
-          throw new Exception("ResultSetMetaData is null");
-        }
-
-        return md;
-      } finally {
-        stmt.close();
-      }
-    } finally {
-      conn.close();
+      builder.addIfNotNull(DisplayData.item("initialNumReaders", getInitialNumReaders()));
     }
   }
 

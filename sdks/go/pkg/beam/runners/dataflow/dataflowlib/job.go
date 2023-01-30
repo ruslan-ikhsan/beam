@@ -46,7 +46,6 @@ type JobOptions struct {
 	// Pipeline options
 	Options runtime.RawOptions
 
-	Streaming           bool
 	Project             string
 	Region              string
 	Zone                string
@@ -81,6 +80,8 @@ type JobOptions struct {
 
 	// Worker is the worker binary override.
 	Worker string
+	// WorkerJar is a custom worker jar.
+	WorkerJar string
 
 	// -- Internal use only. Not supported in public Dataflow. --
 
@@ -88,13 +89,14 @@ type JobOptions struct {
 }
 
 // Translate translates a pipeline to a Dataflow job.
-func Translate(ctx context.Context, p *pipepb.Pipeline, opts *JobOptions, workerURL, modelURL string) (*df.Job, error) {
+func Translate(ctx context.Context, p *pipepb.Pipeline, opts *JobOptions, workerURL, jarURL, modelURL string) (*df.Job, error) {
 	// (1) Translate pipeline to v1b3 speak.
 
 	jobType := "JOB_TYPE_BATCH"
 	apiJobType := "FNAPI_BATCH"
 
-	if opts.Streaming {
+	streaming := !pipelinex.Bounded(p)
+	if streaming {
 		jobType = "JOB_TYPE_STREAMING"
 		apiJobType = "FNAPI_STREAMING"
 	}
@@ -112,6 +114,16 @@ func Translate(ctx context.Context, p *pipepb.Pipeline, opts *JobOptions, worker
 		Name:     "worker",
 		Location: workerURL,
 	}}
+	experiments := append(opts.Experiments, "beam_fn_api")
+
+	if opts.WorkerJar != "" {
+		jar := &df.Package{
+			Name:     "dataflow-worker.jar",
+			Location: jarURL,
+		}
+		packages = append(packages, jar)
+		experiments = append(experiments, "use_staged_dataflow_worker_jar")
+	}
 
 	for _, url := range opts.ArtifactURLs {
 		name := url[strings.LastIndexAny(url, "/")+1:]
@@ -154,7 +166,7 @@ func Translate(ctx context.Context, p *pipepb.Pipeline, opts *JobOptions, worker
 				Options: dataflowOptions{
 					PipelineURL:  modelURL,
 					Region:       opts.Region,
-					Experiments:  opts.Experiments,
+					Experiments:  experiments,
 					TempLocation: opts.TempLocation,
 				},
 				GoOptions: opts.Options,
@@ -181,7 +193,7 @@ func Translate(ctx context.Context, p *pipepb.Pipeline, opts *JobOptions, worker
 			WorkerRegion:      opts.WorkerRegion,
 			WorkerZone:        opts.WorkerZone,
 			TempStoragePrefix: opts.TempLocation,
-			Experiments:       opts.Experiments,
+			Experiments:       experiments,
 		},
 		Labels:               opts.Labels,
 		TransformNameMapping: opts.TransformNameMapping,
@@ -204,6 +216,10 @@ func Translate(ctx context.Context, p *pipepb.Pipeline, opts *JobOptions, worker
 	}
 	if opts.TeardownPolicy != "" {
 		workerPool.TeardownPolicy = opts.TeardownPolicy
+	}
+	if streaming {
+		// Add separate data disk for streaming jobs
+		workerPool.DataDisks = []*df.Disk{{}}
 	}
 
 	return job, nil

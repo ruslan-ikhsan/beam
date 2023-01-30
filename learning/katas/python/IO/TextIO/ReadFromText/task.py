@@ -18,9 +18,7 @@
 #   name: ReadFromText
 #   description: Task from katas to read from text files.
 #   multifile: true
-#   files:
-#     - name: countries.txt
-#   context_line: 33
+#   context_line: 29
 #   categories:
 #     - IO
 #   complexity: BASIC

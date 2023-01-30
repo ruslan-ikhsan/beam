@@ -28,15 +28,17 @@ class ExampleViewOptions with EquatableMixin {
   final List<String> unfoldSectionNames;
 
   const ExampleViewOptions({
+    required this.foldCommentAtLineZero,
+    required this.foldImports,
     required this.readOnlySectionNames,
     required this.showSectionNames,
     required this.unfoldSectionNames,
-    this.foldCommentAtLineZero = true,
-    this.foldImports = true,
   });
 
   factory ExampleViewOptions.fromShortMap(Map<String, dynamic> map) {
     return ExampleViewOptions(
+      foldCommentAtLineZero: true,
+      foldImports: true,
       readOnlySectionNames: _split(map['readonly']),
       showSectionNames: _split(map['show']),
       unfoldSectionNames: _split(map['unfold']),
@@ -52,6 +54,8 @@ class ExampleViewOptions with EquatableMixin {
   }
 
   static const empty = ExampleViewOptions(
+    foldCommentAtLineZero: true,
+    foldImports: true,
     readOnlySectionNames: [],
     showSectionNames: [],
     unfoldSectionNames: [],

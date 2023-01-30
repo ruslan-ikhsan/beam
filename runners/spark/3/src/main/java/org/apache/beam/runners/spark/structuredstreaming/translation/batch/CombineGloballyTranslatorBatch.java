@@ -52,7 +52,7 @@ class CombineGloballyTranslatorBatch<InT, AccT, OutT>
     extends TransformTranslator<PCollection<InT>, PCollection<OutT>, Combine.Globally<InT, OutT>> {
 
   @Override
-  protected void translate(Combine.Globally<InT, OutT> transform, Context cxt) {
+  public void translate(Combine.Globally<InT, OutT> transform, Context cxt) {
     WindowingStrategy<?, ?> windowing = cxt.getInput().getWindowingStrategy();
     CombineFn<InT, AccT, OutT> combineFn = (CombineFn<InT, AccT, OutT>) transform.getFn();
 

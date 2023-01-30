@@ -537,7 +537,7 @@ func init() {
 
 type iterNative struct {
 	s  exec.ReStream
-	fn any
+	fn interface{}
 
 	// cur is the "current" stream, if any.
 	cur exec.Stream
@@ -552,7 +552,7 @@ func (v *iterNative) Init() error {
 	return nil
 }
 
-func (v *iterNative) Value() any {
+func (v *iterNative) Value() interface{} {
 	return v.fn
 }
 

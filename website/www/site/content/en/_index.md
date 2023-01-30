@@ -1,5 +1,5 @@
 ---
-title: "Apache Beam®"
+title: "Apache Beam"
 ---
 
 <!--

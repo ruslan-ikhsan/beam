@@ -61,6 +61,9 @@ import org.powermock.reflect.Whitebox;
 
 /** Tests for building {@link KafkaIO} externally via the ExpansionService. */
 @RunWith(JUnit4.class)
+@SuppressWarnings({
+  "rawtypes", // TODO(https://github.com/apache/beam/issues/20447)
+})
 public class KafkaIOExternalTest {
 
   private void verifyKafkaReadComposite(
@@ -162,7 +165,7 @@ public class KafkaIOExternalTest {
     RecordHeaders headers = new RecordHeaders();
     headers.add("dummyHeaderKey", "dummyHeaderVal".getBytes(StandardCharsets.UTF_8));
     KafkaRecord<byte[], byte[]> kafkaRecord =
-        new KafkaRecord<>(
+        new KafkaRecord(
             "dummyTopic",
             111,
             222,
@@ -192,7 +195,7 @@ public class KafkaIOExternalTest {
     RecordHeaders headers = new RecordHeaders();
     headers.add("dummyHeaderKey", "dummyHeaderVal".getBytes(StandardCharsets.UTF_8));
     KafkaRecord<byte[], byte[]> kafkaRecord =
-        new KafkaRecord<>(
+        new KafkaRecord(
             "dummyTopic", 111, 222, 12345, KafkaTimestampType.LOG_APPEND_TIME, headers, null, null);
 
     ByteArrayKafkaRecord byteArrayKafkaRecord = RowsWithMetadata.toExternalKafkaRecord(kafkaRecord);
@@ -360,9 +363,10 @@ public class KafkaIOExternalTest {
 
     RunnerApi.ParDoPayload parDoPayload =
         RunnerApi.ParDoPayload.parseFrom(writeParDo.getSpec().getPayload());
-    DoFn<?, ?> kafkaWriter = ParDoTranslation.getDoFn(parDoPayload);
+    DoFn kafkaWriter = ParDoTranslation.getDoFn(parDoPayload);
     assertThat(kafkaWriter, Matchers.instanceOf(KafkaWriter.class));
-    KafkaIO.WriteRecords<?, ?> spec = Whitebox.getInternalState(kafkaWriter, "spec");
+    KafkaIO.WriteRecords spec =
+        (KafkaIO.WriteRecords) Whitebox.getInternalState(kafkaWriter, "spec");
 
     assertThat(spec.getProducerConfig(), Matchers.is(producerConfig));
     assertThat(spec.getTopic(), Matchers.is(topic));

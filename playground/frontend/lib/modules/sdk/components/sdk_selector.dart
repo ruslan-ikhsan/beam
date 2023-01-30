@@ -18,23 +18,26 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:playground/components/dropdown_button/dropdown_button.dart';
+import 'package:playground/constants/sizes.dart';
+import 'package:playground/modules/sdk/components/sdk_selector_row.dart';
 import 'package:playground_components/playground_components.dart';
 import 'package:provider/provider.dart';
 
-import '../../../components/dropdown_button/dropdown_button.dart';
-import '../../../constants/sizes.dart';
-import 'sdk_selector_row.dart';
+const kEmptyExampleName = 'Catalog';
 
-const double _width = 150;
+const double kWidth = 150;
+const double kHeight = 172;
 
 class SDKSelector extends StatelessWidget {
-  final ValueChanged<Sdk> onChanged;
   final Sdk? value;
+  final ValueChanged<Sdk> onChanged;
 
   const SDKSelector({
-    required this.onChanged,
+    Key? key,
     required this.value,
-  });
+    required this.onChanged,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -65,10 +68,10 @@ class SDKSelector extends StatelessWidget {
                   ),
                 );
               }),
-              const SizedBox(height: kMdSpacing),
             ],
           ),
-          width: _width,
+          width: kWidth,
+          height: kHeight,
         ),
       ),
     );

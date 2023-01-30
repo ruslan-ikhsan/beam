@@ -33,8 +33,6 @@ $(document).ready(function() {
 
     code.forEach((hl) => {
         if( !hl.parentElement.classList.contains('code-snippet') && !hl.parentElement.classList.contains('highlight')) {
-            const textNode = hl.innerHTML;
-            hl.innerHTML = `<div class="pre-content-container">${textNode}</div>`
             hl.prepend(copyIcon.cloneNode([true]));
         }
     })

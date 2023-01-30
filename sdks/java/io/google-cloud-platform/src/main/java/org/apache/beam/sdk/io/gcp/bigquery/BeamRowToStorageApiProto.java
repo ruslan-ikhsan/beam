@@ -24,11 +24,9 @@ import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.DynamicMessage;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -121,7 +119,7 @@ public class BeamRowToStorageApiProto {
                   CivilTimeEncoder.encodePacked64DatetimeSeconds((LocalDateTime) value))
           .put(
               SqlTypes.TIMESTAMP.getIdentifier(),
-              (logicalType, value) -> (ChronoUnit.MICROS.between(Instant.EPOCH, (Instant) value)))
+              (logicalType, value) -> ((java.time.Instant) value).toEpochMilli() * 1000)
           .put(
               EnumerationType.IDENTIFIER,
               (logicalType, value) ->

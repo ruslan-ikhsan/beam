@@ -24,8 +24,7 @@ set -euo pipefail
 
 PUBLIC_REPOSITORIES=(beam-sdk beam_portability)
 PRIVATE_REPOSITORIES=(java-postcommit-it python-postcommit-it jenkins)
-# set as the same as 6-week release period
-DELETE_BEFORE_DAY=$(date --iso-8601=s -d '6 weeks ago')
+DELETE_BEFORE_DAY=$(date --iso-8601=s -d '30 days ago')
 
 REPOSITORIES=("${PUBLIC_REPOSITORIES[@]/#/gcr.io/apache-beam-testing/}" "${PRIVATE_REPOSITORIES[@]/#/us.gcr.io/apache-beam-testing/}")
 

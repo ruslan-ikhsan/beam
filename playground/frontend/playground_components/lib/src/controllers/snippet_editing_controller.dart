@@ -16,216 +16,133 @@
  * limitations under the License.
  */
 
-import 'package:collection/collection.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_code_editor/flutter_code_editor.dart';
+import 'package:get_it/get_it.dart';
 
 import '../models/example.dart';
 import '../models/example_loading_descriptors/content_example_loading_descriptor.dart';
-import '../models/example_loading_descriptors/empty_example_loading_descriptor.dart';
 import '../models/example_loading_descriptors/example_loading_descriptor.dart';
 import '../models/example_view_options.dart';
-import '../models/loading_status.dart';
 import '../models/sdk.dart';
-import '../models/snippet_file.dart';
-import 'snippet_file_editing_controller.dart';
+import '../services/symbols/symbols_notifier.dart';
 
-/// The main state object for a single [sdk].
 class SnippetEditingController extends ChangeNotifier {
   final Sdk sdk;
-
-  ExampleLoadingDescriptor? _descriptor;
-  Example? _example;
+  final CodeController codeController;
+  final _symbolsNotifier = GetIt.instance.get<SymbolsNotifier>();
+  Example? _selectedExample;
   String _pipelineOptions = '';
-
-  bool _isChanged = false;
-  LoadingStatus _exampleLoadingStatus = LoadingStatus.done;
-
-  SnippetFileEditingController? _activeFileController;
-  final _fileControllers = <SnippetFileEditingController>[];
-  final _fileControllersByName = <String, SnippetFileEditingController>{};
 
   SnippetEditingController({
     required this.sdk,
-  });
+  }) : codeController = CodeController(
+          language: sdk.highlightMode,
+          namedSectionParser: const BracketsStartEndNamedSectionParser(),
+          webSpaceFix: false,
+        ) {
+    _symbolsNotifier.addListener(_onSymbolsNotifierChanged);
+    _onSymbolsNotifierChanged();
+  }
 
-  /// Attempts to acquire a lock for asynchronous example loading.
-  ///
-  /// This prevents race condition for quick example switching
-  /// and allows to show a loading indicator.
-  ///
-  /// Returns whether the lock was acquired.
-  bool lockExampleLoading() {
-    switch (_exampleLoadingStatus) {
-      case LoadingStatus.loading:
-        return false;
-      case LoadingStatus.done:
-      case LoadingStatus.error:
-        _exampleLoadingStatus = LoadingStatus.loading;
-        return true;
+  set selectedExample(Example? value) {
+    _selectedExample = value;
+    setSource(_selectedExample?.source ?? '');
+
+    final viewOptions = value?.viewOptions;
+    if (viewOptions != null) {
+      _applyViewOptions(viewOptions);
     }
-  }
 
-  void releaseExampleLoading() {
-    _exampleLoadingStatus = LoadingStatus.done;
-  }
-
-  bool get isLoading => _exampleLoadingStatus == LoadingStatus.loading;
-
-  void setExample(
-    Example example, {
-    ExampleLoadingDescriptor? descriptor,
-  }) {
-    _descriptor = descriptor;
-    _example = example;
-    _pipelineOptions = example.pipelineOptions;
-    _isChanged = false;
-    releaseExampleLoading();
-
-    _deleteFileControllers();
-    _createFileControllers(example.files, example.viewOptions);
-
+    _pipelineOptions = _selectedExample?.pipelineOptions ?? '';
     notifyListeners();
   }
 
-  Example? get example => _example;
+  void _applyViewOptions(ExampleViewOptions options) {
+    codeController.readOnlySectionNames = options.readOnlySectionNames.toSet();
+    codeController.visibleSectionNames = options.showSectionNames.toSet();
 
-  ExampleLoadingDescriptor? get descriptor => _descriptor;
+    if (options.foldCommentAtLineZero) {
+      codeController.foldCommentAtLineZero();
+    }
+
+    if (options.foldImports) {
+      codeController.foldImports();
+    }
+
+    final unfolded = options.unfoldSectionNames;
+    if (unfolded.isNotEmpty) {
+      codeController.foldOutsideSections(unfolded);
+    }
+  }
+
+  Example? get selectedExample => _selectedExample;
 
   set pipelineOptions(String value) {
-    if (value == _pipelineOptions) {
-      return;
-    }
     _pipelineOptions = value;
-
-    if (!_isChanged) {
-      if (_arePipelineOptionsChanged()) {
-        _isChanged = true;
-        notifyListeners();
-      }
-    } else {
-      _updateIsChanged();
-      if (!_isChanged) {
-        notifyListeners();
-      }
-    }
+    notifyListeners();
   }
 
   String get pipelineOptions => _pipelineOptions;
 
-  bool get isChanged => _isChanged;
-
-  void _updateIsChanged() {
-    _isChanged = _calculateIsChanged();
+  bool get isChanged {
+    return _isCodeChanged() || _arePipelineOptionsChanged();
   }
 
-  bool _calculateIsChanged() {
-    return _isAnyFileControllerChanged() || _arePipelineOptionsChanged();
-  }
-
-  bool _isAnyFileControllerChanged() {
-    return _fileControllers.any((c) => c.isChanged);
+  bool _isCodeChanged() {
+    return _selectedExample?.source != codeController.fullText;
   }
 
   bool _arePipelineOptionsChanged() {
-    return _pipelineOptions != (_example?.pipelineOptions ?? '');
+    return _pipelineOptions != (_selectedExample?.pipelineOptions ?? '');
   }
 
   void reset() {
-    for (final controller in _fileControllers) {
-      controller.reset();
-    }
-
-    _pipelineOptions = _example?.pipelineOptions ?? '';
+    codeController.text = _selectedExample?.source ?? '';
+    _pipelineOptions = _selectedExample?.pipelineOptions ?? '';
   }
 
   /// Creates an [ExampleLoadingDescriptor] that can recover the
   /// current content.
   ExampleLoadingDescriptor getLoadingDescriptor() {
-    final example = this.example;
-    if (example == null) {
-      return EmptyExampleLoadingDescriptor(sdk: sdk);
-    }
-
-    if (!isChanged && _descriptor != null) {
-      return _descriptor!;
-    }
-
+    // TODO: Return other classes for unchanged standard examples,
+    //  user-shared examples, and an empty editor,
+    //  https://github.com/apache/beam/issues/23252
     return ContentExampleLoadingDescriptor(
-      complexity: example.complexity,
-      files: getFiles(),
-      name: example.name,
+      complexity: _selectedExample?.complexity,
+      content: codeController.fullText,
+      name: _selectedExample?.name,
       sdk: sdk,
     );
   }
 
-  void _deleteFileControllers() {
-    for (final controller in _fileControllers) {
-      controller.removeListener(_onFileControllerChanged);
-      controller.dispose();
-    }
+  void setSource(String source) {
+    codeController.readOnlySectionNames = const {};
+    codeController.visibleSectionNames = const {};
 
-    _fileControllers.clear();
-    _fileControllersByName.clear();
+    codeController.fullText = source;
+    codeController.historyController.deleteHistory();
   }
 
-  void _createFileControllers(
-    Iterable<SnippetFile> files,
-    ExampleViewOptions viewOptions,
-  ) {
-    for (final file in files) {
-      final controller = SnippetFileEditingController(
-        contextLine1Based: file.isMain ? _example?.contextLine : null,
-        savedFile: file,
-        sdk: sdk,
-        viewOptions: viewOptions,
-      );
-
-      _fileControllers.add(controller);
-      controller.addListener(_onFileControllerChanged);
+  void _onSymbolsNotifierChanged() {
+    final mode = sdk.highlightMode;
+    if (mode == null) {
+      return;
     }
 
-    for (final controller in _fileControllers) {
-      _fileControllersByName[controller.savedFile.name] = controller;
+    final dictionary = _symbolsNotifier.getDictionary(mode);
+    if (dictionary == null) {
+      return;
     }
 
-    _activeFileController =
-        _fileControllers.firstWhereOrNull((c) => c.savedFile.isMain);
+    codeController.autocompleter.setCustomWords(dictionary.symbols);
   }
 
-  void _onFileControllerChanged() {
-    if (!_isChanged) {
-      if (_isAnyFileControllerChanged()) {
-        _isChanged = true;
-        notifyListeners();
-      }
-    } else {
-      _updateIsChanged();
-      if (!_isChanged) {
-        notifyListeners();
-      }
-    }
-  }
-
-  List<SnippetFileEditingController> get fileControllers =>
-      UnmodifiableListView(_fileControllers);
-
-  SnippetFileEditingController? get activeFileController =>
-      _activeFileController;
-
-  SnippetFileEditingController? getFileControllerByName(String name) {
-    return _fileControllersByName[name];
-  }
-
-  void activateFileControllerByName(String name) {
-    final newController = getFileControllerByName(name);
-
-    if (newController != _activeFileController) {
-      _activeFileController = newController;
-      notifyListeners();
-    }
-  }
-
-  List<SnippetFile> getFiles() {
-    return _fileControllers.map((c) => c.getFile()).toList(growable: false);
+  @override
+  void dispose() {
+    _symbolsNotifier.removeListener(
+      _onSymbolsNotifierChanged,
+    );
+    super.dispose();
   }
 }

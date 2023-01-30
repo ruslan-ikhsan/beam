@@ -22,7 +22,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sync/atomic"
 )
 
 // Severity is the severity of the log message.
@@ -45,17 +44,9 @@ type Logger interface {
 	Log(ctx context.Context, sev Severity, calldepth int, msg string)
 }
 
-var logger atomic.Value
-
-// concreteLogger works around atomic.Value's requirement that the type
-// be identical for all callers.
-type concreteLogger struct {
-	Logger
-}
-
-func init() {
-	logger.Store(&concreteLogger{&Standard{}})
-}
+var (
+	logger Logger = &Standard{}
+)
 
 // SetLogger sets the global Logger. Intended to be called during initialization
 // only.
@@ -63,92 +54,92 @@ func SetLogger(l Logger) {
 	if l == nil {
 		panic("Logger cannot be nil")
 	}
-	logger.Store(&concreteLogger{l})
+	logger = l
 }
 
 // Output logs the given message to the global logger. Calldepth is the count
 // of the number of frames to skip when computing the file name and line number.
 func Output(ctx context.Context, sev Severity, calldepth int, msg string) {
-	logger.Load().(Logger).Log(ctx, sev, calldepth+1, msg) // +1 for this frame
+	logger.Log(ctx, sev, calldepth+1, msg) // +1 for this frame
 }
 
 // User-facing logging functions.
 
 // Debug writes the fmt.Sprint-formatted arguments to the global logger with
 // debug severity.
-func Debug(ctx context.Context, v ...any) {
+func Debug(ctx context.Context, v ...interface{}) {
 	Output(ctx, SevDebug, 1, fmt.Sprint(v...))
 }
 
 // Debugf writes the fmt.Sprintf-formatted arguments to the global logger with
 // debug severity.
-func Debugf(ctx context.Context, format string, v ...any) {
+func Debugf(ctx context.Context, format string, v ...interface{}) {
 	Output(ctx, SevDebug, 1, fmt.Sprintf(format, v...))
 }
 
 // Debugln writes the fmt.Sprintln-formatted arguments to the global logger with
 // debug severity.
-func Debugln(ctx context.Context, v ...any) {
+func Debugln(ctx context.Context, v ...interface{}) {
 	Output(ctx, SevDebug, 1, fmt.Sprintln(v...))
 }
 
 // Info writes the fmt.Sprint-formatted arguments to the global logger with
 // info severity.
-func Info(ctx context.Context, v ...any) {
+func Info(ctx context.Context, v ...interface{}) {
 	Output(ctx, SevInfo, 1, fmt.Sprint(v...))
 }
 
 // Infof writes the fmt.Sprintf-formatted arguments to the global logger with
 // info severity.
-func Infof(ctx context.Context, format string, v ...any) {
+func Infof(ctx context.Context, format string, v ...interface{}) {
 	Output(ctx, SevInfo, 1, fmt.Sprintf(format, v...))
 }
 
 // Infoln writes the fmt.Sprintln-formatted arguments to the global logger with
 // info severity.
-func Infoln(ctx context.Context, v ...any) {
+func Infoln(ctx context.Context, v ...interface{}) {
 	Output(ctx, SevInfo, 1, fmt.Sprintln(v...))
 }
 
 // Warn writes the fmt.Sprint-formatted arguments to the global logger with
 // warn severity.
-func Warn(ctx context.Context, v ...any) {
+func Warn(ctx context.Context, v ...interface{}) {
 	Output(ctx, SevWarn, 1, fmt.Sprint(v...))
 }
 
 // Warnf writes the fmt.Sprintf-formatted arguments to the global logger with
 // warn severity.
-func Warnf(ctx context.Context, format string, v ...any) {
+func Warnf(ctx context.Context, format string, v ...interface{}) {
 	Output(ctx, SevWarn, 1, fmt.Sprintf(format, v...))
 }
 
 // Warnln writes the fmt.Sprintln-formatted arguments to the global logger with
 // warn severity.
-func Warnln(ctx context.Context, v ...any) {
+func Warnln(ctx context.Context, v ...interface{}) {
 	Output(ctx, SevWarn, 1, fmt.Sprintln(v...))
 }
 
 // Error writes the fmt.Sprint-formatted arguments to the global logger with
 // error severity.
-func Error(ctx context.Context, v ...any) {
+func Error(ctx context.Context, v ...interface{}) {
 	Output(ctx, SevError, 1, fmt.Sprint(v...))
 }
 
 // Errorf writes the fmt.Sprintf-formatted arguments to the global logger with
 // error severity.
-func Errorf(ctx context.Context, format string, v ...any) {
+func Errorf(ctx context.Context, format string, v ...interface{}) {
 	Output(ctx, SevError, 1, fmt.Sprintf(format, v...))
 }
 
 // Errorln writes the fmt.Sprintln-formatted arguments to the global logger with
 // error severity.
-func Errorln(ctx context.Context, v ...any) {
+func Errorln(ctx context.Context, v ...interface{}) {
 	Output(ctx, SevError, 1, fmt.Sprintln(v...))
 }
 
 // Fatal writes the fmt.Sprint-formatted arguments to the global logger with
 // fatal severity. It then panics.
-func Fatal(ctx context.Context, v ...any) {
+func Fatal(ctx context.Context, v ...interface{}) {
 	msg := fmt.Sprint(v...)
 	Output(ctx, SevFatal, 1, msg)
 	panic(msg)
@@ -156,7 +147,7 @@ func Fatal(ctx context.Context, v ...any) {
 
 // Fatalf writes the fmt.Sprintf-formatted arguments to the global logger with
 // fatal severity. It then panics.
-func Fatalf(ctx context.Context, format string, v ...any) {
+func Fatalf(ctx context.Context, format string, v ...interface{}) {
 	msg := fmt.Sprintf(format, v...)
 	Output(ctx, SevFatal, 1, msg)
 	panic(msg)
@@ -164,7 +155,7 @@ func Fatalf(ctx context.Context, format string, v ...any) {
 
 // Fatalln writes the fmt.Sprintln-formatted arguments to the global logger with
 // fatal severity. It then panics.
-func Fatalln(ctx context.Context, v ...any) {
+func Fatalln(ctx context.Context, v ...interface{}) {
 	msg := fmt.Sprintln(v...)
 	Output(ctx, SevFatal, 1, msg)
 	panic(msg)
@@ -172,21 +163,21 @@ func Fatalln(ctx context.Context, v ...any) {
 
 // Exit writes the fmt.Sprint-formatted arguments to the global logger with
 // fatal severity. It then exits.
-func Exit(ctx context.Context, v ...any) {
+func Exit(ctx context.Context, v ...interface{}) {
 	Output(ctx, SevFatal, 1, fmt.Sprint(v...))
 	os.Exit(1)
 }
 
 // Exitf writes the fmt.Sprintf-formatted arguments to the global logger with
 // fatal severity. It then exits.
-func Exitf(ctx context.Context, format string, v ...any) {
+func Exitf(ctx context.Context, format string, v ...interface{}) {
 	Output(ctx, SevFatal, 1, fmt.Sprintf(format, v...))
 	os.Exit(1)
 }
 
 // Exitln writes the fmt.Sprintln-formatted arguments to the global logger with
 // fatal severity. It then exits.
-func Exitln(ctx context.Context, v ...any) {
+func Exitln(ctx context.Context, v ...interface{}) {
 	Output(ctx, SevFatal, 1, fmt.Sprintln(v...))
 	os.Exit(1)
 }

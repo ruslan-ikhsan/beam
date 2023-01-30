@@ -36,10 +36,8 @@ var defaultReg = newRegistry()
 // replace calls to a Beam ExpansionService.
 //
 // Then, expansion addresses of the forms
-//
-//	"<namespace>" or
-//	"<namespace>:<configuration>"
-//
+//   "<namespace>" or
+//   "<namespace>:<configuration>"
 // can be used with beam.CrossLanguage. Any configuration after the separator is
 // provided to the HandlerFunc on call for the handler func to use at it's leisure.
 func RegisterHandler(namespace string, handler HandlerFunc) {
@@ -53,9 +51,8 @@ func RegisterHandler(namespace string, handler HandlerFunc) {
 // or be a namespaced handler registered with RegisterHandler.
 //
 // When the expansion address is for a handler, it may take the forms
-//
-//	"<namespace>" or
-//	"<namespace>:<configuration>"
+//  "<namespace>" or
+//  "<namespace>:<configuration>"
 func RegisterOverrideForUrn(urn, expansionAddr string) {
 	if err := defaultReg.RegisterOverrideForUrn(urn, expansionAddr); err != nil {
 		panic(err)

@@ -395,9 +395,7 @@ public abstract class Row implements Serializable {
     FieldType fieldType = getSchema().getField(idx).getType();
     if (fieldType.getTypeName().isLogicalType() && value != null) {
       while (fieldType.getTypeName().isLogicalType()) {
-        Schema.LogicalType<Object, T> logicalType =
-            (Schema.LogicalType<Object, T>) fieldType.getLogicalType();
-        value = logicalType.toBaseType(value);
+        value = fieldType.getLogicalType().toBaseType(value);
         fieldType = fieldType.getLogicalType().getBaseType();
       }
     }
@@ -463,12 +461,10 @@ public abstract class Row implements Serializable {
       if (a == null || b == null) {
         return a == b;
       } else if (fieldType.getTypeName() == TypeName.LOGICAL_TYPE) {
-        Schema.LogicalType<Object, Object> logicalType =
-            (Schema.LogicalType<Object, Object>) fieldType.getLogicalType();
         return deepEquals(
-            SchemaUtils.toLogicalBaseType(logicalType, a),
-            SchemaUtils.toLogicalBaseType(logicalType, b),
-            logicalType.getBaseType());
+            SchemaUtils.toLogicalBaseType(fieldType.getLogicalType(), a),
+            SchemaUtils.toLogicalBaseType(fieldType.getLogicalType(), b),
+            fieldType.getLogicalType().getBaseType());
       } else if (fieldType.getTypeName() == Schema.TypeName.BYTES) {
         return Arrays.equals((byte[]) a, (byte[]) b);
       } else if (fieldType.getTypeName() == TypeName.ARRAY) {
@@ -852,12 +848,7 @@ public abstract class Row implements Serializable {
         throw new IllegalArgumentException(
             "Row expected "
                 + schema.getFieldCount()
-                + String.format(
-                    " fields (%s).",
-                    schema.getFields().stream()
-                        .map(Object::toString)
-                        .collect(Collectors.joining(", ")))
-                + " initialized with "
+                + " fields. initialized with "
                 + values.size()
                 + " fields.");
       }

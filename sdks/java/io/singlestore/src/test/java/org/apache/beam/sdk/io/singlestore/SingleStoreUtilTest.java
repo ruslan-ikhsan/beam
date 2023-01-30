@@ -79,23 +79,6 @@ public class SingleStoreUtilTest {
     }
   }
 
-  private static class TestRowMapperWithCoder extends TestRowMapper
-      implements SingleStoreIO.RowMapperWithCoder<TestRow> {
-    @Override
-    public Coder<TestRow> getCoder() throws Exception {
-      return SerializableCoder.of(TestRow.class);
-    }
-  }
-
-  @Test
-  public void testInferCoderFromRowMapper() {
-    SchemaRegistry sr = SchemaRegistry.createDefault();
-    CoderRegistry cr = CoderRegistry.createDefault();
-    Coder<TestRow> c = SerializableCoder.of(TestRow.class);
-
-    assertEquals(c, SingleStoreUtil.inferCoder(new TestRowMapperWithCoder(), cr, sr, LOG));
-  }
-
   @Test
   public void testInferCoderFromSchemaRegistry() {
     SchemaRegistry sr = SchemaRegistry.createDefault();

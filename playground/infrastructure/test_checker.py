@@ -13,13 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pathlib import PurePath
-
 import mock
 import pytest
+from pathlib import PurePath
+from api.v1.api_pb2 import SDK_JAVA
 
 import checker
-from api.v1.api_pb2 import SDK_JAVA
 from checker import check_in_allowlist, check_sdk_examples
 
 
@@ -38,19 +37,11 @@ def test_check_in_allowlist(paths, allowlist, result):
 
 
 @pytest.mark.parametrize(
-    "paths, sdk, has_tag, isfile, result",
+    "paths, sdk, has_tag, result",
     [
-        ([PurePath("path"), PurePath("path/path2.java")], SDK_JAVA, True, True, True),
-        ([PurePath("path"), PurePath("path/path2.java")], SDK_JAVA, True, False, False),
+        ([PurePath("path"), PurePath("path/path2.java")], SDK_JAVA, True, True),
     ],
 )
-@mock.patch('checker.os.path.isfile')
-def test_check_sdk_examples(mock_os_path_isfile, paths, sdk, has_tag, isfile, result):
+def test_check_sdk_examples(paths, sdk, has_tag, result):
     checker.get_tag = mock.Mock(return_value=has_tag)
-    mock_os_path_isfile.return_value = isfile
     assert result == check_sdk_examples(paths, sdk, "root_dir")
-    mock_os_path_isfile.assert_has_calls(
-        [
-            mock.call(PurePath("root_dir/path/path2.java")),
-        ]
-    )

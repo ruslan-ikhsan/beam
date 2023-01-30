@@ -140,8 +140,8 @@ public class JdbcIOIT {
       PipelineResult.State readState = readResult.waitUntilFinish();
       gatherAndPublishMetrics(writeResult, readResult);
       // Fail the test if pipeline failed.
-      assertNotEquals(PipelineResult.State.FAILED, writeState);
-      assertNotEquals(PipelineResult.State.FAILED, readState);
+      assertNotEquals(writeState, PipelineResult.State.FAILED);
+      assertNotEquals(readState, PipelineResult.State.FAILED);
     } finally {
       DatabaseTestHelper.deleteTable(dataSource, tableName);
     }

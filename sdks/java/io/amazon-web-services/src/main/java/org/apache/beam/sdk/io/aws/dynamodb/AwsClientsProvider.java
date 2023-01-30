@@ -31,7 +31,7 @@ public interface AwsClientsProvider extends Serializable {
 
   /** @deprecated DynamoDBIO doesn't require a CloudWatch client */
   @Deprecated
-  @SuppressWarnings("return")
+  @SuppressWarnings("return.type.incompatible")
   default AmazonCloudWatch getCloudWatchClient() {
     return null;
   }

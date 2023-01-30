@@ -56,7 +56,6 @@ import org.apache.beam.sdk.schemas.logicaltypes.VariableString;
 import org.apache.beam.sdk.util.SerializableUtils;
 import org.apache.beam.sdk.values.Row;
 import org.apache.beam.vendor.grpc.v1p48p1.com.google.protobuf.ByteString;
-import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.annotations.VisibleForTesting;
 import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.base.Preconditions;
 import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.collect.ImmutableMap;
 import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.collect.Iterables;
@@ -64,8 +63,6 @@ import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.collect.Maps;
 import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.io.ByteStreams;
 import org.apache.commons.lang3.ClassUtils;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Utility methods for translating schemas. */
 @Experimental(Kind.SCHEMAS)
@@ -74,7 +71,6 @@ import org.slf4j.LoggerFactory;
   "rawtypes"
 })
 public class SchemaTranslation {
-  private static final Logger LOG = LoggerFactory.getLogger(SchemaTranslation.class);
 
   private static final String URN_BEAM_LOGICAL_DECIMAL = FixedPrecisionNumeric.BASE_IDENTIFIER;
   private static final String URN_BEAM_LOGICAL_JAVASDK = "beam:logical_type:javasdk:v1";
@@ -128,8 +124,8 @@ public class SchemaTranslation {
         .build();
   }
 
-  @VisibleForTesting
-  static SchemaApi.FieldType fieldTypeToProto(FieldType fieldType, boolean serializeLogicalType) {
+  private static SchemaApi.FieldType fieldTypeToProto(
+      FieldType fieldType, boolean serializeLogicalType) {
     SchemaApi.FieldType.Builder builder = SchemaApi.FieldType.newBuilder();
     switch (fieldType.getTypeName()) {
       case ROW:
@@ -301,8 +297,7 @@ public class SchemaTranslation {
         .withDescription(protoField.getDescription());
   }
 
-  @VisibleForTesting
-  static FieldType fieldTypeFromProto(SchemaApi.FieldType protoFieldType) {
+  private static FieldType fieldTypeFromProto(SchemaApi.FieldType protoFieldType) {
     FieldType fieldType = fieldTypeFromProtoWithoutNullable(protoFieldType);
 
     if (protoFieldType.getNullable()) {
@@ -431,32 +426,26 @@ public class SchemaTranslation {
           return FieldType.DATETIME;
         } else if (urn.equals(URN_BEAM_LOGICAL_DECIMAL)) {
           return FieldType.DECIMAL;
-        } else if (urn.startsWith("beam:logical_type:")) {
-          try {
-            return FieldType.logicalType(
-                (LogicalType)
-                    SerializableUtils.deserializeFromByteArray(
-                        logicalType.getPayload().toByteArray(), "logicalType"));
-          } catch (IllegalArgumentException e) {
-            LOG.warn(
-                "Unable to deserialize the logical type {} from proto. Mark as UnknownLogicalType.",
-                urn);
+        } else if (urn.equals(URN_BEAM_LOGICAL_JAVASDK)) {
+          return FieldType.logicalType(
+              (LogicalType)
+                  SerializableUtils.deserializeFromByteArray(
+                      logicalType.getPayload().toByteArray(), "logicalType"));
+        } else {
+          @Nullable FieldType argumentType = null;
+          @Nullable Object argumentValue = null;
+          if (logicalType.hasArgumentType()) {
+            argumentType = fieldTypeFromProto(logicalType.getArgumentType());
+            argumentValue = fieldValueFromProto(argumentType, logicalType.getArgument());
           }
+          return FieldType.logicalType(
+              new UnknownLogicalType(
+                  urn,
+                  logicalType.getPayload().toByteArray(),
+                  argumentType,
+                  argumentValue,
+                  fieldTypeFromProto(logicalType.getRepresentation())));
         }
-        // assemble an UnknownLogicalType
-        @Nullable FieldType argumentType = null;
-        @Nullable Object argumentValue = null;
-        if (logicalType.hasArgumentType()) {
-          argumentType = fieldTypeFromProto(logicalType.getArgumentType());
-          argumentValue = fieldValueFromProto(argumentType, logicalType.getArgument());
-        }
-        return FieldType.logicalType(
-            new UnknownLogicalType(
-                urn,
-                logicalType.getPayload().toByteArray(),
-                argumentType,
-                argumentValue,
-                fieldTypeFromProto(logicalType.getRepresentation())));
       default:
         throw new IllegalArgumentException(
             "Unexpected type_info: " + protoFieldType.getTypeInfoCase());

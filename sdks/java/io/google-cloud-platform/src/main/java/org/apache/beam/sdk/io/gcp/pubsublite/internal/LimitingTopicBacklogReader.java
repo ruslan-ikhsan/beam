@@ -39,7 +39,7 @@ final class LimitingTopicBacklogReader implements TopicBacklogReader {
   @Nullable
   private Offset currentRequestOffset = null;
 
-  @SuppressWarnings("method.invocation")
+  @SuppressWarnings("method.invocation.invalid")
   LimitingTopicBacklogReader(TopicBacklogReader underlying, Ticker ticker) {
     this.underlying = underlying;
     backlogCache =
@@ -57,7 +57,7 @@ final class LimitingTopicBacklogReader implements TopicBacklogReader {
                 });
   }
 
-  @SuppressWarnings("argument")
+  @SuppressWarnings("argument.type.incompatible")
   private synchronized ComputeMessageStatsResponse loadFromUnderlying() {
     return underlying.computeMessageStats(checkNotNull(currentRequestOffset));
   }

@@ -20,12 +20,10 @@ package org.apache.beam.runners.fnexecution.control;
 import static org.apache.beam.vendor.guava.v26_0_jre.com.google.common.base.Preconditions.checkArgument;
 import static org.apache.beam.vendor.guava.v26_0_jre.com.google.common.base.Preconditions.checkState;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Phaser;
@@ -48,16 +46,12 @@ import org.apache.beam.runners.fnexecution.data.FnDataService;
 import org.apache.beam.runners.fnexecution.data.RemoteInputDestination;
 import org.apache.beam.runners.fnexecution.state.StateDelegator;
 import org.apache.beam.runners.fnexecution.state.StateRequestHandler;
-import org.apache.beam.sdk.coders.Coder;
 import org.apache.beam.sdk.fn.IdGenerator;
 import org.apache.beam.sdk.fn.IdGenerators;
-import org.apache.beam.sdk.fn.data.BeamFnDataInboundObserver;
-import org.apache.beam.sdk.fn.data.BeamFnDataOutboundAggregator;
 import org.apache.beam.sdk.fn.data.CloseableFnDataReceiver;
-import org.apache.beam.sdk.fn.data.DataEndpoint;
 import org.apache.beam.sdk.fn.data.FnDataReceiver;
+import org.apache.beam.sdk.fn.data.InboundDataClient;
 import org.apache.beam.sdk.fn.data.LogicalEndpoint;
-import org.apache.beam.sdk.fn.data.TimerEndpoint;
 import org.apache.beam.sdk.util.MoreFutures;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.collect.ImmutableMap;
@@ -268,64 +262,44 @@ public class SdkHarnessClient implements AutoCloseable {
 
       CompletionStage<BeamFnApi.ProcessBundleResponse> specificResponse =
           genericResponse.thenApply(InstructionResponse::getProcessBundle);
-      Optional<BeamFnDataInboundObserver> beamFnDataInboundObserver;
-      if (outputReceivers.isEmpty() && timerReceivers.isEmpty()) {
-        beamFnDataInboundObserver = Optional.empty();
-      } else {
-        List<DataEndpoint<?>> dataEndpoints = new ArrayList<>(outputReceivers.size());
-        for (Map.Entry<String, RemoteOutputReceiver<?>> receiver : outputReceivers.entrySet()) {
-          dataEndpoints.add(
-              DataEndpoint.create(
-                  receiver.getKey(),
-                  (Coder<Object>) receiver.getValue().getCoder(),
-                  (FnDataReceiver<Object>) receiver.getValue().getReceiver()));
-        }
-        List<TimerEndpoint<?>> timerEndpoints = new ArrayList<>(timerReceivers.size());
-        for (Map.Entry<KV<String, String>, RemoteOutputReceiver<Timer<?>>> timerReceiver :
-            timerReceivers.entrySet()) {
-          timerEndpoints.add(
-              TimerEndpoint.create(
-                  timerReceiver.getKey().getKey(),
-                  timerReceiver.getKey().getValue(),
-                  timerReceiver.getValue().getCoder(),
-                  timerReceiver.getValue().getReceiver()));
-        }
-        beamFnDataInboundObserver =
-            Optional.of(BeamFnDataInboundObserver.forConsumers(dataEndpoints, timerEndpoints));
-        fnApiDataService.registerReceiver(bundleId, beamFnDataInboundObserver.get());
+      Map<LogicalEndpoint, InboundDataClient> outputClients = new HashMap<>();
+      for (Map.Entry<String, RemoteOutputReceiver<?>> receiver : outputReceivers.entrySet()) {
+        LogicalEndpoint endpoint = LogicalEndpoint.data(bundleId, receiver.getKey());
+        InboundDataClient outputClient =
+            attachReceiver(endpoint, (RemoteOutputReceiver) receiver.getValue());
+        outputClients.put(endpoint, outputClient);
+      }
+      for (Map.Entry<KV<String, String>, RemoteOutputReceiver<Timer<?>>> timerReceiver :
+          timerReceivers.entrySet()) {
+        LogicalEndpoint endpoint =
+            LogicalEndpoint.timer(
+                bundleId, timerReceiver.getKey().getKey(), timerReceiver.getKey().getValue());
+        InboundDataClient outputClient = attachReceiver(endpoint, timerReceiver.getValue());
+        outputClients.put(endpoint, outputClient);
       }
 
-      ImmutableMap.Builder<LogicalEndpoint, FnDataReceiver<?>> receiverBuilder =
+      ImmutableMap.Builder<LogicalEndpoint, CloseableFnDataReceiver> receiverBuilder =
           ImmutableMap.builder();
-      BeamFnDataOutboundAggregator beamFnDataOutboundAggregator =
-          fnApiDataService.createOutboundAggregator(() -> bundleId, false);
       for (RemoteInputDestination remoteInput : remoteInputs) {
         LogicalEndpoint endpoint = LogicalEndpoint.data(bundleId, remoteInput.getPTransformId());
         receiverBuilder.put(
             endpoint,
-            new CountingFnDataReceiver(
-                beamFnDataOutboundAggregator.registerOutputDataLocation(
-                    remoteInput.getPTransformId(), remoteInput.getCoder())));
+            new CountingFnDataReceiver(fnApiDataService.send(endpoint, remoteInput.getCoder())));
       }
 
       for (Map.Entry<String, Map<String, TimerSpec>> entry : timerSpecs.entrySet()) {
         for (TimerSpec timerSpec : entry.getValue().values()) {
           LogicalEndpoint endpoint =
               LogicalEndpoint.timer(bundleId, timerSpec.transformId(), timerSpec.timerId());
-          receiverBuilder.put(
-              endpoint,
-              beamFnDataOutboundAggregator.registerOutputTimersLocation(
-                  timerSpec.transformId(), timerSpec.timerId(), timerSpec.coder()));
+          receiverBuilder.put(endpoint, fnApiDataService.send(endpoint, timerSpec.coder()));
         }
       }
-      beamFnDataOutboundAggregator.start();
 
       return new ActiveBundle(
           bundleId,
           specificResponse,
-          beamFnDataOutboundAggregator,
           receiverBuilder.build(),
-          beamFnDataInboundObserver,
+          outputClients,
           stateDelegator.registerForProcessBundleInstructionId(bundleId, stateRequestHandler),
           progressHandler,
           splitHandler,
@@ -333,13 +307,17 @@ public class SdkHarnessClient implements AutoCloseable {
           finalizationHandler);
     }
 
+    private <OutputT> InboundDataClient attachReceiver(
+        LogicalEndpoint endpoint, RemoteOutputReceiver<OutputT> receiver) {
+      return fnApiDataService.receive(endpoint, receiver.getCoder(), receiver.getReceiver());
+    }
+
     /** An active bundle for a particular {@link BeamFnApi.ProcessBundleDescriptor}. */
     public class ActiveBundle implements RemoteBundle {
       private final String bundleId;
       private final CompletionStage<BeamFnApi.ProcessBundleResponse> response;
-      private final BeamFnDataOutboundAggregator beamFnDataOutboundAggregator;
-      private final Map<LogicalEndpoint, FnDataReceiver<?>> inputReceivers;
-      private final Optional<BeamFnDataInboundObserver> beamFnDataInboundObserver;
+      private final Map<LogicalEndpoint, CloseableFnDataReceiver> inputReceivers;
+      private final Map<LogicalEndpoint, InboundDataClient> outputClients;
       private final StateDelegator.Registration stateRegistration;
       private final BundleProgressHandler progressHandler;
       private final BundleSplitHandler splitHandler;
@@ -352,9 +330,8 @@ public class SdkHarnessClient implements AutoCloseable {
       private ActiveBundle(
           String bundleId,
           CompletionStage<ProcessBundleResponse> response,
-          BeamFnDataOutboundAggregator beamFnDataOutboundAggregator,
-          Map<LogicalEndpoint, FnDataReceiver<?>> inputReceivers,
-          Optional<BeamFnDataInboundObserver> beamFnDataInboundObserver,
+          Map<LogicalEndpoint, CloseableFnDataReceiver> inputReceivers,
+          Map<LogicalEndpoint, InboundDataClient> outputClients,
           StateDelegator.Registration stateRegistration,
           BundleProgressHandler progressHandler,
           BundleSplitHandler splitHandler,
@@ -362,9 +339,8 @@ public class SdkHarnessClient implements AutoCloseable {
           BundleFinalizationHandler finalizationHandler) {
         this.bundleId = bundleId;
         this.response = response;
-        this.beamFnDataOutboundAggregator = beamFnDataOutboundAggregator;
         this.inputReceivers = inputReceivers;
-        this.beamFnDataInboundObserver = beamFnDataInboundObserver;
+        this.outputClients = outputClients;
         this.stateRegistration = stateRegistration;
         this.progressHandler = progressHandler;
         this.splitHandler = splitHandler;
@@ -395,7 +371,8 @@ public class SdkHarnessClient implements AutoCloseable {
       @Override
       public Map<String, FnDataReceiver> getInputReceivers() {
         ImmutableMap.Builder<String, FnDataReceiver> rval = ImmutableMap.builder();
-        for (Map.Entry<LogicalEndpoint, FnDataReceiver<?>> entry : inputReceivers.entrySet()) {
+        for (Map.Entry<LogicalEndpoint, CloseableFnDataReceiver> entry :
+            inputReceivers.entrySet()) {
           if (!entry.getKey().isTimer()) {
             rval.put(entry.getKey().getTransformId(), entry.getValue());
           }
@@ -407,11 +384,12 @@ public class SdkHarnessClient implements AutoCloseable {
       public Map<KV<String, String>, FnDataReceiver<Timer>> getTimerReceivers() {
         ImmutableMap.Builder<KV<String, String>, FnDataReceiver<Timer>> rval =
             ImmutableMap.builder();
-        for (Map.Entry<LogicalEndpoint, FnDataReceiver<?>> entry : inputReceivers.entrySet()) {
+        for (Map.Entry<LogicalEndpoint, CloseableFnDataReceiver> entry :
+            inputReceivers.entrySet()) {
           if (entry.getKey().isTimer()) {
             rval.put(
                 KV.of(entry.getKey().getTransformId(), entry.getKey().getTimerFamilyId()),
-                (FnDataReceiver<Timer>) entry.getValue());
+                entry.getValue());
           }
         }
         return rval.build();
@@ -454,7 +432,7 @@ public class SdkHarnessClient implements AutoCloseable {
           outstandingRequests.register();
         }
         Map<String, DesiredSplit> splits = new HashMap<>();
-        for (Map.Entry<LogicalEndpoint, FnDataReceiver<?>> ptransformToInput :
+        for (Map.Entry<LogicalEndpoint, CloseableFnDataReceiver> ptransformToInput :
             inputReceivers.entrySet()) {
           if (!ptransformToInput.getKey().isTimer()) {
             splits.put(
@@ -509,12 +487,16 @@ public class SdkHarnessClient implements AutoCloseable {
         }
 
         Exception exception = null;
-        try {
-          beamFnDataOutboundAggregator.sendOrCollectBufferedDataAndFinishOutboundStreams();
-        } catch (Exception e) {
-          exception = e;
-        } finally {
-          beamFnDataOutboundAggregator.discard();
+        for (CloseableFnDataReceiver<?> inputReceiver : inputReceivers.values()) {
+          try {
+            inputReceiver.close();
+          } catch (Exception e) {
+            if (exception == null) {
+              exception = e;
+            } else {
+              exception.addSuppressed(e);
+            }
+          }
         }
         try {
           // We don't have to worry about the completion stage.
@@ -555,13 +537,12 @@ public class SdkHarnessClient implements AutoCloseable {
             exception.addSuppressed(e);
           }
         }
-        if (beamFnDataInboundObserver.isPresent()) {
+        for (InboundDataClient outputClient : outputClients.values()) {
           try {
             if (exception == null) {
-              beamFnDataInboundObserver.get().awaitCompletion();
-              fnApiDataService.unregisterReceiver(bundleId);
+              outputClient.awaitCompletion();
             } else {
-              beamFnDataInboundObserver.get().close();
+              outputClient.cancel();
             }
           } catch (Exception e) {
             if (exception == null) {
@@ -715,12 +696,14 @@ public class SdkHarnessClient implements AutoCloseable {
     }
   }
 
-  /** A {@link FnDataReceiver} which counts the number of elements that have been accepted. */
-  private static class CountingFnDataReceiver<T> implements FnDataReceiver<T> {
-    private final FnDataReceiver<T> delegate;
+  /**
+   * A {@link CloseableFnDataReceiver} which counts the number of elements that have been accepted.
+   */
+  private static class CountingFnDataReceiver<T> implements CloseableFnDataReceiver<T> {
+    private final CloseableFnDataReceiver delegate;
     private long count;
 
-    private CountingFnDataReceiver(FnDataReceiver<T> delegate) {
+    private CountingFnDataReceiver(CloseableFnDataReceiver delegate) {
       this.delegate = delegate;
     }
 
@@ -732,6 +715,16 @@ public class SdkHarnessClient implements AutoCloseable {
     public void accept(T input) throws Exception {
       delegate.accept(input);
       count += 1;
+    }
+
+    @Override
+    public void flush() throws Exception {
+      delegate.flush();
+    }
+
+    @Override
+    public void close() throws Exception {
+      delegate.close();
     }
   }
 

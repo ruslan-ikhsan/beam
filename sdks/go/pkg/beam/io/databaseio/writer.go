@@ -30,7 +30,7 @@ import (
 
 // Writer returns a row of data to be inserted into a table.
 type Writer interface {
-	SaveData() (map[string]any, error)
+	SaveData() (map[string]interface{}, error)
 }
 
 type writer struct {
@@ -38,13 +38,13 @@ type writer struct {
 	table                  string
 	sqlTemplate            string
 	valueTemplateGenerator *valueTemplateGenerator
-	binding                []any
+	binding                []interface{}
 	columnCount            int
 	rowCount               int
 	totalCount             int
 }
 
-func (w *writer) add(row []any) error {
+func (w *writer) add(row []interface{}) error {
 	w.rowCount++
 	w.totalCount++
 	if len(row) != w.columnCount {
@@ -69,7 +69,7 @@ func (w *writer) write(ctx context.Context, db *sql.DB) error {
 	if int(affected) != w.rowCount {
 		return errors.Errorf("expected to write: %v, but written: %v", w.rowCount, affected)
 	}
-	w.binding = []any{}
+	w.binding = []interface{}{}
 	w.rowCount = 0
 	return nil
 }
@@ -96,7 +96,7 @@ func newWriter(driver string, batchSize int, table string, columns []string) (*w
 		batchSize:              batchSize,
 		columnCount:            len(columns),
 		table:                  table,
-		binding:                make([]any, 0),
+		binding:                make([]interface{}, 0),
 		sqlTemplate:            fmt.Sprintf("INSERT INTO %v(%v) VALUES", table, strings.Join(columns, ",")),
 		valueTemplateGenerator: &valueTemplateGenerator{driver},
 	}, nil

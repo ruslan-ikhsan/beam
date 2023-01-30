@@ -23,13 +23,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Supplier;
 import org.apache.beam.model.fnexecution.v1.BeamFnApi;
-import org.apache.beam.model.fnexecution.v1.BeamFnApi.Elements;
 import org.apache.beam.model.fnexecution.v1.BeamFnDataGrpc;
+import org.apache.beam.sdk.coders.Coder;
 import org.apache.beam.sdk.fn.data.BeamFnDataGrpcMultiplexer;
-import org.apache.beam.sdk.fn.data.BeamFnDataOutboundAggregator;
+import org.apache.beam.sdk.fn.data.BeamFnDataInboundObserver;
+import org.apache.beam.sdk.fn.data.BeamFnDataOutboundObserver;
 import org.apache.beam.sdk.fn.data.CloseableFnDataReceiver;
+import org.apache.beam.sdk.fn.data.DecodingFnDataReceiver;
+import org.apache.beam.sdk.fn.data.FnDataReceiver;
+import org.apache.beam.sdk.fn.data.InboundDataClient;
+import org.apache.beam.sdk.fn.data.LogicalEndpoint;
 import org.apache.beam.sdk.fn.server.FnService;
 import org.apache.beam.sdk.fn.stream.OutboundObserverFactory;
 import org.apache.beam.sdk.options.PipelineOptions;
@@ -135,11 +139,18 @@ public class GrpcDataService extends BeamFnDataGrpc.BeamFnDataImplBase
 
   @Override
   @SuppressWarnings("FutureReturnValueIgnored")
-  public void registerReceiver(String instructionId, CloseableFnDataReceiver<Elements> observer) {
-    LOG.debug("Registering observer for instruction {}", instructionId);
+  public <T> InboundDataClient receive(
+      final LogicalEndpoint inputLocation, Coder<T> coder, FnDataReceiver<T> listener) {
+    LOG.debug(
+        "Registering receiver for instruction {} and transform {}",
+        inputLocation.getInstructionId(),
+        inputLocation.getTransformId());
+    final BeamFnDataInboundObserver observer =
+        BeamFnDataInboundObserver.forConsumer(
+            inputLocation, new DecodingFnDataReceiver<T>(coder, listener));
     if (connectedClient.isDone()) {
       try {
-        connectedClient.get().registerConsumer(instructionId, observer);
+        connectedClient.get().registerConsumer(inputLocation, observer);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         throw new RuntimeException(e);
@@ -150,7 +161,7 @@ public class GrpcDataService extends BeamFnDataGrpc.BeamFnDataImplBase
       executor.submit(
           () -> {
             try {
-              connectedClient.get().registerConsumer(instructionId, observer);
+              connectedClient.get().registerConsumer(inputLocation, observer);
             } catch (InterruptedException e) {
               Thread.currentThread().interrupt();
               throw new RuntimeException(e);
@@ -159,29 +170,21 @@ public class GrpcDataService extends BeamFnDataGrpc.BeamFnDataImplBase
             }
           });
     }
+    return observer;
   }
 
   @Override
-  public void unregisterReceiver(String instructionId) {
+  public <T> CloseableFnDataReceiver<T> send(LogicalEndpoint outputLocation, Coder<T> coder) {
+    LOG.debug(
+        "Creating sender for instruction {} and transform {}",
+        outputLocation.getInstructionId(),
+        outputLocation.getTransformId());
     try {
-      connectedClient.get().unregisterConsumer(instructionId);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new RuntimeException(e);
-    } catch (ExecutionException e) {
-      throw new RuntimeException(e.getCause());
-    }
-  }
-
-  @Override
-  public BeamFnDataOutboundAggregator createOutboundAggregator(
-      Supplier<String> processBundleRequestIdSupplier, boolean collectElementsIfNoFlushes) {
-    try {
-      return new BeamFnDataOutboundAggregator(
-          options,
-          processBundleRequestIdSupplier,
+      return new BeamFnDataOutboundObserver<>(
+          outputLocation,
+          coder,
           connectedClient.get(3, TimeUnit.MINUTES).getOutboundObserver(),
-          collectElementsIfNoFlushes);
+          options);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new RuntimeException(e);

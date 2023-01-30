@@ -149,7 +149,7 @@ func TestSchema_validate(t *testing.T) {
 	tests := []struct {
 		rt               reflect.Type
 		p                beam.SchemaProvider
-		logical, storage any
+		logical, storage interface{}
 	}{
 		{
 			rt:      tnType,

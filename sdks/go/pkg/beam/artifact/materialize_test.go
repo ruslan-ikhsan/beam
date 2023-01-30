@@ -380,11 +380,11 @@ func (fake *fakeGetArtifactResponseStream) Recv() (*jobpb.GetArtifactResponse, e
 	return nil, io.EOF
 }
 
-func (fake *fakeGetArtifactResponseStream) RecvMsg(any) error {
+func (fake *fakeGetArtifactResponseStream) RecvMsg(interface{}) error {
 	return nil
 }
 
-func (fake *fakeGetArtifactResponseStream) SendMsg(any) error {
+func (fake *fakeGetArtifactResponseStream) SendMsg(interface{}) error {
 	return nil
 }
 

@@ -16,14 +16,11 @@
  * limitations under the License.
  */
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:get_it/get_it.dart';
 import 'package:playground_components/playground_components.dart';
 
-import '../state.dart';
 import 'footer.dart';
-import 'login/button.dart';
+import 'login/login_button.dart';
 import 'logo.dart';
 import 'profile/avatar.dart';
 import 'sdk_dropdown.dart';
@@ -36,18 +33,22 @@ class TobScaffold extends StatelessWidget {
     required this.child,
   });
 
+  // TODO(nausharipov): get state
+  static const _isAuthorized = true;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false,
         title: const Logo(),
         actions: const [
-          _ActionVerticalPadding(child: _SdkSelector()),
+          _ActionVerticalPadding(child: SdkDropdown()),
           SizedBox(width: BeamSizes.size12),
           _ActionVerticalPadding(child: ToggleThemeButton()),
           SizedBox(width: BeamSizes.size6),
-          _ActionVerticalPadding(child: _Profile()),
+          _ActionVerticalPadding(
+            child: _isAuthorized ? Avatar() : LoginButton(),
+          ),
           SizedBox(width: BeamSizes.size16),
         ],
       ),
@@ -57,21 +58,6 @@ class TobScaffold extends StatelessWidget {
           const Footer(),
         ],
       ),
-    );
-  }
-}
-
-class _Profile extends StatelessWidget {
-  const _Profile();
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder(
-      stream: FirebaseAuth.instance.userChanges(),
-      builder: (context, snapshot) {
-        final user = snapshot.data;
-        return user == null ? const LoginButton() : Avatar(user: user);
-      },
     );
   }
 }
@@ -86,29 +72,6 @@ class _ActionVerticalPadding extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: BeamSizes.size10),
       child: child,
-    );
-  }
-}
-
-class _SdkSelector extends StatelessWidget {
-  const _SdkSelector();
-
-  @override
-  Widget build(BuildContext context) {
-    final appNotifier = GetIt.instance.get<AppNotifier>();
-    return AnimatedBuilder(
-      animation: appNotifier,
-      builder: (context, child) {
-        final sdkId = appNotifier.sdkId;
-        return sdkId == null
-            ? Container()
-            : SdkDropdown(
-                sdkId: sdkId,
-                onChanged: (value) {
-                  appNotifier.sdkId = value;
-                },
-              );
-      },
     );
   }
 }

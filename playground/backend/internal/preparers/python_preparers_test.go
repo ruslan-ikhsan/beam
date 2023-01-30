@@ -16,19 +16,17 @@
 package preparers
 
 import (
+	"beam.apache.org/playground/backend/internal/utils"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
-
-	"beam.apache.org/playground/backend/internal/utils"
 )
 
 func TestGetPythonPreparers(t *testing.T) {
 	type args struct {
-		filePath      string
-		prepareParams map[string]string
+		filePath string
 	}
 	tests := []struct {
 		name string
@@ -37,13 +35,13 @@ func TestGetPythonPreparers(t *testing.T) {
 	}{
 		{
 			name: "Get number of python preparers",
-			args: args{"MOCK_FILEPATH", make(map[string]string)},
+			args: args{"MOCK_FILEPATH"},
 			want: 2,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			builder := NewPreparersBuilder(tt.args.filePath, tt.args.prepareParams)
+			builder := NewPreparersBuilder(tt.args.filePath)
 			GetPythonPreparers(builder, false)
 			if got := builder.Build().GetPreparers(); len(*got) != tt.want {
 				t.Errorf("GetPythonPreparers() returns %v Preparers, want %v", len(*got), tt.want)

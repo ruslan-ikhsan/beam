@@ -17,7 +17,6 @@
  */
 
 import 'package:playground_components/src/models/sdk.dart';
-import 'package:playground_components/src/models/snippet_file.dart';
 import 'package:playground_components/src/repositories/models/get_default_precompiled_object_request.dart';
 import 'package:playground_components/src/repositories/models/get_precompiled_object_code_response.dart';
 import 'package:playground_components/src/repositories/models/get_precompiled_object_request.dart';
@@ -41,11 +40,11 @@ const kGetDefaultPrecompiledObjectRequest = GetDefaultPrecompiledObjectRequest(
   sdk: Sdk.java,
 );
 const kGetDefaultPrecompiledObjectResponse = GetPrecompiledObjectResponse(
-  example: examplePython1,
+  example: exampleMock1,
 );
 
 const kGetPrecompiledObjectCodeResponse = GetPrecompiledObjectCodeResponse(
-  files: [SnippetFile(content: 'test source', isMain: true)],
+  code: 'test source',
 );
 const kOutputResponse = OutputResponse(output: 'test outputs');
 

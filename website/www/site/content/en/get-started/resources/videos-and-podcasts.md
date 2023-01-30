@@ -3,7 +3,6 @@ title: "Videos and Podcasts"
 aliases:
   - /learn/resources/
   - /get-started/resources/
-  - /documentation/resources/videos-and-podcasts/
 ---
 <!--
 Licensed under the Apache License, Version 2.0 (the "License");

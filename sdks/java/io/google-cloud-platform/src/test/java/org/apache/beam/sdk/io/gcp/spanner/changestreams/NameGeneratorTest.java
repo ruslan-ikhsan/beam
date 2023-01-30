@@ -23,7 +23,8 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 public class NameGeneratorTest {
-  private static final int MAXIMUM_POSTGRES_TABLE_NAME_LENGTH = 63;
+
+  private static final int MAXIMUM_TABLE_NAME_LENGTH = 128;
 
   @Test
   public void testGenerateMetadataTableNameRemovesHyphens() {
@@ -33,9 +34,9 @@ public class NameGeneratorTest {
   }
 
   @Test
-  public void testGenerateMetadataTableNameIsShorterThan64Characters() {
+  public void testGenerateMetadataTableNameIsShorterThan128Characters() {
     final String tableName =
         NameGenerator.generatePartitionMetadataTableName("my-database-id1-maximum-length");
-    assertTrue(tableName.length() <= MAXIMUM_POSTGRES_TABLE_NAME_LENGTH);
+    assertTrue(tableName.length() < MAXIMUM_TABLE_NAME_LENGTH);
   }
 }

@@ -22,13 +22,7 @@ import 'package:playground_components/playground_components.dart';
 import 'builders/sdks.dart';
 
 class SdkDropdown extends StatelessWidget {
-  final String sdkId;
-  final ValueChanged<String> onChanged;
-
-  const SdkDropdown({
-    required this.sdkId,
-    required this.onChanged,
-  });
+  const SdkDropdown();
 
   @override
   Widget build(BuildContext context) {
@@ -40,11 +34,9 @@ class SdkDropdown extends StatelessWidget {
 
         return _DropdownWrapper(
           child: DropdownButton(
-            value: sdkId,
+            value: sdks.first.id,
             onChanged: (sdk) {
-              if (sdk != null) {
-                onChanged(sdk);
-              }
+              // TODO(nausharipov): change SDK
             },
             items: sdks
                 .map(
@@ -54,6 +46,7 @@ class SdkDropdown extends StatelessWidget {
                   ),
                 )
                 .toList(growable: false),
+            isDense: true,
             alignment: Alignment.center,
             focusColor: BeamColors.transparent,
             borderRadius: BorderRadius.circular(BeamSizes.size6),
@@ -70,10 +63,9 @@ class _DropdownWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.only(left: BeamSizes.size10),
+    return DecoratedBox(
       decoration: BoxDecoration(
-        color: Theme.of(context).selectedRowColor,
+        color: Theme.of(context).hoverColor,
         borderRadius: BorderRadius.circular(BeamSizes.size6),
       ),
       child: DropdownButtonHideUnderline(child: child),

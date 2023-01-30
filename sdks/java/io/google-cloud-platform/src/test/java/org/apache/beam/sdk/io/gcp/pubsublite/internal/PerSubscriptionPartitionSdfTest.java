@@ -134,7 +134,7 @@ public class PerSubscriptionPartitionSdfTest {
   }
 
   @Test
-  @SuppressWarnings("argument")
+  @SuppressWarnings("argument.type.incompatible")
   public void process() throws Exception {
     when(processor.run()).thenReturn(ProcessContinuation.resume());
     when(processorFactory.newProcessor(any(), any(), any()))
@@ -171,7 +171,7 @@ public class PerSubscriptionPartitionSdfTest {
   }
 
   @Test
-  @SuppressWarnings("return")
+  @SuppressWarnings("return.type.incompatible")
   public void dofnIsSerializable() throws Exception {
     ObjectOutputStream output = new ObjectOutputStream(new ByteArrayOutputStream());
     output.writeObject(

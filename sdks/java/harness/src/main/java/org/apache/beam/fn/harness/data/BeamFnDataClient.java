@@ -33,7 +33,12 @@ import org.apache.beam.sdk.fn.data.FnDataReceiver;
  */
 public interface BeamFnDataClient {
   /**
-   * Registers a receiver for the provided instruction id.
+   * Registers the following inbound receiver for the provided instruction id.
+   *
+   * <p>The provided coder is used to decode inbound elements. The decoded elements are passed to
+   * the provided receiver. Any failure during decoding or processing of the element will complete
+   * the returned future exceptionally. On successful termination of the stream, the returned future
+   * is completed successfully.
    *
    * <p>The receiver is not required to be thread safe.
    *
@@ -64,7 +69,7 @@ public interface BeamFnDataClient {
    * timers over the data plane. It is important that {@link
    * BeamFnDataOutboundAggregator#sendOrCollectBufferedDataAndFinishOutboundStreams()} is called on
    * the returned BeamFnDataOutboundAggregator at the end of each bundle. If
-   * collectElementsIfNoFlushes is set to true, {@link
+   * collectElementsIfNoFlushes is set to true, {@link *
    * BeamFnDataOutboundAggregator#sendOrCollectBufferedDataAndFinishOutboundStreams()} returns the
    * buffered elements instead of sending it through the outbound StreamObserver if there's no
    * previous flush.

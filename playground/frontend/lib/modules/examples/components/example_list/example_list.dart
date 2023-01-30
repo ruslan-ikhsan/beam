@@ -17,28 +17,24 @@
  */
 
 import 'package:flutter/material.dart';
+import 'package:playground/modules/examples/components/examples_components.dart';
+import 'package:playground/pages/playground/states/example_selector_state.dart';
 import 'package:playground_components/playground_components.dart';
 import 'package:provider/provider.dart';
 
-import '../../../../pages/standalone_playground/notifiers/example_selector_state.dart';
-import '../examples_components.dart';
-
-/// The list of expandable example categories shown in the example dropdown.
-class ExampleList extends StatefulWidget {
-  final VoidCallback onSelected;
-  final ExampleBase? selectedExample;
+class ExampleList extends StatelessWidget {
+  final ScrollController controller;
+  final AnimationController animationController;
+  final OverlayEntry? dropdown;
+  final ExampleBase selectedExample;
 
   const ExampleList({
-    required this.onSelected,
+    Key? key,
+    required this.controller,
     required this.selectedExample,
-  });
-
-  @override
-  State<ExampleList> createState() => _ExampleListState();
-}
-
-class _ExampleListState extends State<ExampleList> {
-  final _scrollController = ScrollController();
+    required this.animationController,
+    required this.dropdown,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -49,16 +45,17 @@ class _ExampleListState extends State<ExampleList> {
           child: Scrollbar(
             thumbVisibility: true,
             trackVisibility: true,
-            controller: _scrollController,
+            controller: controller,
             child: ListView.builder(
               itemCount: state.categories.length,
               itemBuilder: (context, index) => CategoryExpansionPanel(
-                onSelected: widget.onSelected,
-                selectedExample: widget.selectedExample,
+                selectedExample: selectedExample,
                 categoryName: state.categories[index].title,
                 examples: state.categories[index].examples,
+                animationController: animationController,
+                dropdown: dropdown,
               ),
-              controller: _scrollController,
+              controller: controller,
               shrinkWrap: true,
             ),
           ),

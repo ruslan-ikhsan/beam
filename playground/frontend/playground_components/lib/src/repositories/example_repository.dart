@@ -19,7 +19,6 @@
 import '../models/category_with_examples.dart';
 import '../models/example_base.dart';
 import '../models/sdk.dart';
-import '../models/snippet_file.dart';
 import 'example_client/example_client.dart';
 import 'models/get_default_precompiled_object_request.dart';
 import 'models/get_precompiled_object_request.dart';
@@ -35,49 +34,49 @@ class ExampleRepository {
     required ExampleClient client,
   }) : _client = client;
 
-  Future<Map<Sdk, List<CategoryWithExamples>>> getPrecompiledObjects(
+  Future<Map<Sdk, List<CategoryWithExamples>>> getListOfExamples(
     GetPrecompiledObjectsRequest request,
   ) async {
     final result = await _client.getPrecompiledObjects(request);
     return result.categories;
   }
 
-  Future<ExampleBase> getDefaultPrecompiledObject(
+  Future<ExampleBase> getDefaultExample(
     GetDefaultPrecompiledObjectRequest request,
   ) async {
     final result = await _client.getDefaultPrecompiledObject(request);
     return result.example;
   }
 
-  Future<List<SnippetFile>> getPrecompiledObjectCode(
+  Future<String> getExampleSource(
     GetPrecompiledObjectRequest request,
   ) async {
     final result = await _client.getPrecompiledObjectCode(request);
-    return result.files;
+    return result.code;
   }
 
-  Future<String> getPrecompiledObjectOutput(
+  Future<String> getExampleOutput(
     GetPrecompiledObjectRequest request,
   ) async {
     final result = await _client.getPrecompiledObjectOutput(request);
     return result.output;
   }
 
-  Future<String> getPrecompiledObjectLogs(
+  Future<String> getExampleLogs(
     GetPrecompiledObjectRequest request,
   ) async {
     final result = await _client.getPrecompiledObjectLogs(request);
     return result.output;
   }
 
-  Future<String> getPrecompiledObjectGraph(
+  Future<String> getExampleGraph(
     GetPrecompiledObjectRequest request,
   ) async {
     final result = await _client.getPrecompiledObjectGraph(request);
     return result.output;
   }
 
-  Future<ExampleBase> getPrecompiledObject(
+  Future<ExampleBase> getExample(
     GetPrecompiledObjectRequest request,
   ) async {
     final result = await _client.getPrecompiledObject(request);

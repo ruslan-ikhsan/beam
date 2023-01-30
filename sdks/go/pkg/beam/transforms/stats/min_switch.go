@@ -22,7 +22,7 @@ import (
 	"reflect"
 )
 
-func findMinFn(t reflect.Type) any {
+func findMinFn(t reflect.Type) interface{} {
 	switch t.String() {
 	case "int":
 		return minIntFn

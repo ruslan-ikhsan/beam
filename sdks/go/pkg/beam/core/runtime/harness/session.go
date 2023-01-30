@@ -35,7 +35,7 @@ var capture io.WriteCloser
 var (
 	sessionLock sync.Mutex
 	bufPool     = sync.Pool{
-		New: func() any {
+		New: func() interface{} {
 			return proto.NewBuffer(nil)
 		},
 	}

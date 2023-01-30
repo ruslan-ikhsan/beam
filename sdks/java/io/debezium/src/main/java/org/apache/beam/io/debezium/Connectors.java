@@ -18,7 +18,9 @@
 package org.apache.beam.io.debezium;
 
 import org.apache.kafka.connect.source.SourceConnector;
-import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Enumeration of debezium connectors. */
 public enum Connectors {
@@ -28,6 +30,7 @@ public enum Connectors {
   ORACLE("Oracle", "io.debezium.connector.oracle.OracleConnector"),
   DB2("DB2", "io.debezium.connector.db2.Db2Connector"),
   ;
+  private static final Logger LOG = LoggerFactory.getLogger(Connectors.class);
   private final String name;
   private final String connector;
 
@@ -42,14 +45,12 @@ public enum Connectors {
   }
 
   /** Class connector to debezium. */
-  public @NonNull Class<? extends SourceConnector> getConnector() {
+  public @Nullable Class<? extends SourceConnector> getConnector() {
     Class<? extends SourceConnector> connectorClass = null;
     try {
       connectorClass = (Class<? extends SourceConnector>) Class.forName(this.connector);
     } catch (ClassCastException | ClassNotFoundException e) {
-      throw new IllegalArgumentException(
-          String.format(
-              "Unable to resolve class %s to use as Debezium connector.", this.connector));
+      LOG.error("Connector class is not found", e);
     }
     return connectorClass;
   }

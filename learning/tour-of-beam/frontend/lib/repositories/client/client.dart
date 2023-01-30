@@ -19,7 +19,6 @@
 import '../../models/content_tree.dart';
 import '../../models/unit_content.dart';
 import '../models/get_sdks_response.dart';
-import '../models/get_user_progress_response.dart';
 
 abstract class TobClient {
   Future<ContentTreeModel> getContentTree(String sdkId);
@@ -27,8 +26,4 @@ abstract class TobClient {
   Future<GetSdksResponse> getSdks();
 
   Future<UnitContentModel> getUnitContent(String sdkId, String unitId);
-
-  Future<GetUserProgressResponse?> getUserProgress(String sdkId);
-
-  Future<void> postUnitComplete(String sdkId, String id);
 }

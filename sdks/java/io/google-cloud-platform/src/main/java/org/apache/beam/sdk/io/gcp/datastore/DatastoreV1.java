@@ -1485,7 +1485,7 @@ public class DatastoreV1 {
     private final V1DatastoreFactory datastoreFactory;
     // Current batch of mutations to be written.
     private final List<Mutation> mutations = new ArrayList<>();
-    private final HashSet<com.google.datastore.v1.Key> uniqueMutationKeys = new HashSet<>();
+    private final HashSet<Mutation> uniqueMutations = new HashSet<>();
     private int mutationsSize = 0; // Accumulated size of protos in mutations.
     private WriteBatcher writeBatcher;
     private transient AdaptiveThrottler adaptiveThrottler;
@@ -1547,7 +1547,7 @@ public class DatastoreV1 {
       Mutation write = c.element();
       int size = write.getSerializedSize();
 
-      if (!uniqueMutationKeys.add(write.getUpsert().getKey())) {
+      if (!uniqueMutations.add(c.element())) {
         flushBatch();
       }
 
@@ -1579,8 +1579,7 @@ public class DatastoreV1 {
      * @throws DatastoreException if the commit fails or IOException or InterruptedException if
      *     backing off between retries fails.
      */
-    private synchronized void flushBatch()
-        throws DatastoreException, IOException, InterruptedException {
+    private void flushBatch() throws DatastoreException, IOException, InterruptedException {
       LOG.debug("Writing batch of {} mutations", mutations.size());
       Sleeper sleeper = Sleeper.DEFAULT;
       BackOff backoff = BUNDLE_WRITE_BACKOFF.backoff();
@@ -1655,7 +1654,7 @@ public class DatastoreV1 {
       }
       LOG.debug("Successfully wrote {} mutations", mutations.size());
       mutations.clear();
-      uniqueMutationKeys.clear();
+      uniqueMutations.clear();
       mutationsSize = 0;
     }
 

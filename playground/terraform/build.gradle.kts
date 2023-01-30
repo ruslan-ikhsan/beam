@@ -40,6 +40,8 @@ val licenseText = "#############################################################
 
 plugins {
     id("com.pswidersk.terraform-plugin") version "1.0.0"
+    id("org.unbroken-dome.helm") version "1.7.0"
+    id("org.unbroken-dome.helm-releases") version "1.7.0"
 }
 
 terraformPlugin {
@@ -70,7 +72,6 @@ tasks {
         mustRunAfter(":playground:terraform:terraformInit")
         var project_id = "unknown"
         var environment = "unknown"
-        var region = "unknown"
         if (project.hasProperty("project_id")) {
             project_id = project.property("project_id") as String
         }
@@ -82,7 +83,6 @@ tasks {
             "-lock=false",
             "-var=project_id=$project_id",
             "-var=environment=$environment",
-            "-var=region=$region",
             if (file("./environment/$environment/terraform.tfvars").exists()) {
                 "-var-file=./environment/$environment/terraform.tfvars"
             } else {
@@ -248,7 +248,7 @@ tasks {
 }
 
 /* set Docker Registry to params from Inf */
-tasks.register("setDockerRegistry") {
+task("setDockerRegistry") {
     group = "deploy"
     //get Docker Registry
     dependsOn(":playground:terraform:terraformInit")
@@ -265,13 +265,13 @@ tasks.register("setDockerRegistry") {
     }
 }
 
-tasks.register("readState") {
+task("readState") {
     group = "deploy"
     dependsOn(":playground:terraform:terraformInit")
     dependsOn(":playground:terraform:terraformRef")
 }
 
-tasks.register("pushBack") {
+task("pushBack") {
     group = "deploy"
     dependsOn(":playground:backend:containers:go:dockerTagsPush")
     dependsOn(":playground:backend:containers:java:dockerTagsPush")
@@ -280,12 +280,12 @@ tasks.register("pushBack") {
     dependsOn(":playground:backend:containers:router:dockerTagsPush")
 }
 
-tasks.register("pushFront") {
+task("pushFront") {
     group = "deploy"
     dependsOn(":playground:frontend:dockerTagsPush")
 }
 
-tasks.register("prepareConfig") {
+task("prepareConfig") {
     group = "deploy"
     doLast {
         var dns_name = ""
@@ -324,7 +324,7 @@ const String kApiScioClientURL =
     }
 }
 /* initialization infrastructure */
-tasks.register("InitInfrastructure") {
+task("InitInfrastructure") {
     group = "deploy"
     description = "initialization infrastructure"
     val init = tasks.getByName("terraformInit")
@@ -337,7 +337,7 @@ tasks.register("InitInfrastructure") {
     prepare.mustRunAfter(apply)
 }
 
-tasks.register("indexcreate") {
+task ("indexcreate") {
     group = "deploy"
     val indexpath = "../index.yaml"
     doLast{
@@ -349,7 +349,7 @@ tasks.register("indexcreate") {
 }
 
 /* build, push, deploy Frontend app */
-tasks.register("deployFrontend") {
+task("deployFrontend") {
     group = "deploy"
     description = "deploy Frontend app"
     val read = tasks.getByName("readState")
@@ -364,7 +364,7 @@ tasks.register("deployFrontend") {
 }
 
 /* build, push, deploy Backend app */
-tasks.register("deployBackend") {
+task("deployBackend") {
     group = "deploy"
     description = "deploy Backend app"
     //TODO please add default tag from project_environment property
@@ -382,7 +382,7 @@ tasks.register("deployBackend") {
     dependsOn(deploy)
 }
 
-tasks.register("takeConfig") {
+task("takeConfig") {
   group = "deploy"
   doLast {
    var ipaddr = ""
@@ -465,38 +465,35 @@ dns_name: ${dns_name}
  }
 }
 
-tasks.register("helmRelease") {
-    group = "deploy"
-    val modulePath = project(":playground").projectDir.absolutePath
-    val hdir = File("$modulePath/infrastructure/helm-playground/")
-    doLast{
-    exec {
-        executable("helm")
-    args("install", "playground", "$hdir")
+helm {
+    val playground by charts.creating {
+        chartName.set("playground")
+        sourceDir.set(file("../infrastructure/helm-playground"))
     }
-   }
-}
-tasks.register("gkebackend") {
-  group = "deploy"
-  val initTask = tasks.getByName("terraformInit")
-  val docRegTask = tasks.getByName("setDockerRegistry")
-  val takeConfigTask = tasks.getByName("takeConfig")
-  val pushBackTask = tasks.getByName("pushBack")
-  val pushFrontTask = tasks.getByName("pushFront")
-  val indexcreateTask = tasks.getByName("indexcreate")
-  val helmTask = tasks.getByName("helmRelease")
-  dependsOn(initTask)
-  dependsOn(docRegTask)
-  dependsOn(takeConfigTask)
-  dependsOn(pushBackTask)
-  dependsOn(pushFrontTask)
-  dependsOn(indexcreateTask)
-  dependsOn(helmTask)
-  docRegTask.mustRunAfter(initTask)
-  takeConfigTask.mustRunAfter(docRegTask)
-  pushBackTask.mustRunAfter(takeConfigTask)
-  pushFrontTask.mustRunAfter(pushBackTask)
-  indexcreateTask.mustRunAfter(pushFrontTask)
-  helmTask.mustRunAfter(indexcreateTask)
+    releases {
+        create("playground") {
+            from(playground)
+        }
+    }
 }
 
+task ("gkebackend") {
+  group = "deploy"
+  val init = tasks.getByName("terraformInit")
+  val takeConfig = tasks.getByName("takeConfig")
+  val back = tasks.getByName("pushBack")
+  val front = tasks.getByName("pushFront")
+  val indexcreate = tasks.getByName("indexcreate")
+  val helm = tasks.getByName("helmInstallPlayground")
+  dependsOn(init)
+  dependsOn(takeConfig)
+  dependsOn(back)
+  dependsOn(front)
+  dependsOn(indexcreate)
+  dependsOn(helm)
+  takeConfig.mustRunAfter(init)
+  back.mustRunAfter(takeConfig)
+  front.mustRunAfter(back)
+  indexcreate.mustRunAfter(front)
+  helm.mustRunAfter(indexcreate)
+}

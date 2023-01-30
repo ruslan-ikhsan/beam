@@ -115,7 +115,6 @@ func init() {
 	functions.HTTP("getUserProgress", commonGet(ParseSdkParam(auth.ParseAuthHeader(getUserProgress))))
 	functions.HTTP("postUnitComplete", commonPost(ParseSdkParam(auth.ParseAuthHeader(postUnitComplete))))
 	functions.HTTP("postUserCode", commonPost(ParseSdkParam(auth.ParseAuthHeader(postUserCode))))
-	functions.HTTP("postDeleteProgress", commonPost(auth.ParseAuthHeader(postDeleteProgress)))
 }
 
 // Get list of SDK names
@@ -133,8 +132,7 @@ func getSdkList(w http.ResponseWriter, r *http.Request) {
 
 // Get the content tree for a given SDK
 // Required to be wrapped into ParseSdkParam middleware.
-func getContentTree(w http.ResponseWriter, r *http.Request) {
-	sdk := getContextSdk(r)
+func getContentTree(w http.ResponseWriter, r *http.Request, sdk tob.Sdk) {
 	tree, err := svc.GetContentTree(r.Context(), sdk)
 	if err != nil {
 		log.Println("Get content tree error:", err)
@@ -154,8 +152,7 @@ func getContentTree(w http.ResponseWriter, r *http.Request) {
 // Everything needed to render a learning unit:
 // description, hints, code snippets
 // Required to be wrapped into ParseSdkParam middleware.
-func getUnitContent(w http.ResponseWriter, r *http.Request) {
-	sdk := getContextSdk(r)
+func getUnitContent(w http.ResponseWriter, r *http.Request, sdk tob.Sdk) {
 	unitId := r.URL.Query().Get("id")
 
 	unit, err := svc.GetUnitContent(r.Context(), sdk, unitId)
@@ -177,11 +174,8 @@ func getUnitContent(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Get user progress by sdk and uid
-func getUserProgress(w http.ResponseWriter, r *http.Request) {
-	sdk := getContextSdk(r)
-	uid := getContextUid(r)
-
+// Get user progress
+func getUserProgress(w http.ResponseWriter, r *http.Request, sdk tob.Sdk, uid string) {
 	progress, err := svc.GetUserProgress(r.Context(), sdk, uid)
 
 	if err != nil {
@@ -199,9 +193,7 @@ func getUserProgress(w http.ResponseWriter, r *http.Request) {
 }
 
 // Mark unit completed
-func postUnitComplete(w http.ResponseWriter, r *http.Request) {
-	sdk := getContextSdk(r)
-	uid := getContextUid(r)
+func postUnitComplete(w http.ResponseWriter, r *http.Request, sdk tob.Sdk, uid string) {
 	unitId := r.URL.Query().Get("id")
 
 	err := svc.SetUnitComplete(r.Context(), sdk, unitId, uid)
@@ -219,9 +211,7 @@ func postUnitComplete(w http.ResponseWriter, r *http.Request) {
 }
 
 // Save user code for unit
-func postUserCode(w http.ResponseWriter, r *http.Request) {
-	sdk := getContextSdk(r)
-	uid := getContextUid(r)
+func postUserCode(w http.ResponseWriter, r *http.Request, sdk tob.Sdk, uid string) {
 	unitId := r.URL.Query().Get("id")
 
 	var userCodeRequest tob.UserCodeRequest
@@ -244,20 +234,6 @@ func postUserCode(w http.ResponseWriter, r *http.Request) {
 			message = fmt.Sprintf("playground api error: %s", st)
 		}
 		finalizeErrResponse(w, http.StatusInternalServerError, INTERNAL_ERROR, message)
-		return
-	}
-
-	fmt.Fprint(w, "{}")
-}
-
-// Delete user progress
-func postDeleteProgress(w http.ResponseWriter, r *http.Request) {
-	uid := getContextUid(r)
-
-	err := svc.DeleteProgress(r.Context(), uid)
-	if err != nil {
-		log.Println("Delete progress error:", err)
-		finalizeErrResponse(w, http.StatusInternalServerError, INTERNAL_ERROR, "storage error")
 		return
 	}
 

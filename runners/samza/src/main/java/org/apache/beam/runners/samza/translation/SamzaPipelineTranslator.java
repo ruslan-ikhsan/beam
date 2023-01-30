@@ -23,7 +23,6 @@ import com.google.auto.service.AutoService;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ServiceLoader;
-import java.util.Set;
 import org.apache.beam.runners.core.construction.PTransformTranslation;
 import org.apache.beam.runners.core.construction.TransformPayloadTranslatorRegistrar;
 import org.apache.beam.runners.core.construction.graph.ExecutableStage;
@@ -79,9 +78,8 @@ public class SamzaPipelineTranslator {
       Pipeline pipeline,
       SamzaPipelineOptions options,
       Map<PValue, String> idMap,
-      Set<String> nonUniqueStateIds,
       ConfigBuilder configBuilder) {
-    final ConfigContext ctx = new ConfigContext(idMap, nonUniqueStateIds, options);
+    final ConfigContext ctx = new ConfigContext(idMap, options);
 
     final TransformVisitorFn configFn =
         new TransformVisitorFn() {

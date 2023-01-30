@@ -2096,10 +2096,7 @@ public class DoFnOperatorTest {
     testHarness.processElement(
         new StreamRecord<>(WindowedValue.valueInGlobalWindow(KV.of("key2", "d"))));
 
-    assertThat(
-        testHarness.getOutput() + " should be empty",
-        Iterables.size(testHarness.getOutput()),
-        is(0));
+    assertThat(Iterables.size(testHarness.getOutput()), is(0));
 
     OperatorSubtaskState backup = testHarness.snapshot(0, 0);
     doFnOperator.notifyCheckpointComplete(0L);

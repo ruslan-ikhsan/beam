@@ -22,10 +22,8 @@ import static org.mockito.Mockito.mock;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.beam.runners.samza.SamzaPipelineOptions;
 import org.apache.beam.runners.samza.runtime.OpMessage;
@@ -62,10 +60,8 @@ public class TranslationContextTest {
           },
           getConfig());
   Map<PValue, String> idMap = new HashMap<>();
-  Set<String> nonUniqueStateIds = new HashSet<>();
   TranslationContext translationContext =
-      new TranslationContext(
-          streamApplicationDescriptor, idMap, nonUniqueStateIds, mock(SamzaPipelineOptions.class));
+      new TranslationContext(streamApplicationDescriptor, idMap, mock(SamzaPipelineOptions.class));
 
   @Test
   public void testRegisterInputMessageStreams() {

@@ -125,13 +125,7 @@ class FnApiLogRecordHandler(logging.Handler):
     # type: (logging.LogRecord) -> None
     log_entry = beam_fn_api_pb2.LogEntry()
     log_entry.severity = self.map_log_level(record.levelno)
-    try:
-      log_entry.message = self.format(record)
-    except Exception:
-      # record.msg could be an arbitrary object, convert it to a string first.
-      log_entry.message = (
-          "Failed to format '%s' with args '%s' during logging." %
-          (str(record.msg), record.args))
+    log_entry.message = self.format(record)
     log_entry.thread = record.threadName
     log_entry.log_location = '%s:%s' % (
         record.pathname or record.module, record.lineno or record.funcName)

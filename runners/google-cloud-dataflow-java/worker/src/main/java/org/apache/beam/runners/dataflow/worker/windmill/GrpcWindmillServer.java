@@ -625,8 +625,7 @@ public class GrpcWindmillServer extends WindmillServerStub {
    */
   private abstract class AbstractWindmillStream<RequestT, ResponseT> implements WindmillStream {
     private final StreamObserverFactory streamObserverFactory =
-        StreamObserverFactory.direct(
-            streamDeadlineSeconds * 2, options.getWindmillMessagesBetweenIsReadyChecks());
+        StreamObserverFactory.direct(streamDeadlineSeconds * 2);
     private final Function<StreamObserver<ResponseT>, StreamObserver<RequestT>> clientFactory;
     private final Executor executor =
         Executors.newSingleThreadExecutor(

@@ -39,6 +39,7 @@ import org.apache.beam.sdk.runners.AppliedPTransform;
 import org.apache.beam.sdk.transforms.PTransform;
 
 @SuppressWarnings({
+  "rawtypes", // TODO(https://github.com/apache/beam/issues/20447)
   "nullness" // TODO(https://github.com/apache/beam/issues/20497)
 })
 /**
@@ -139,7 +140,6 @@ public class PubSubPayloadTranslation {
   public static class WriteRegistrar implements TransformPayloadTranslatorRegistrar {
 
     @Override
-    @SuppressWarnings("rawtypes")
     public Map<? extends Class<? extends PTransform>, ? extends TransformPayloadTranslator>
         getTransformPayloadTranslators() {
       return Collections.singletonMap(
@@ -151,7 +151,6 @@ public class PubSubPayloadTranslation {
   public static class ReadRegistrar implements TransformPayloadTranslatorRegistrar {
 
     @Override
-    @SuppressWarnings("rawtypes")
     public Map<? extends Class<? extends PTransform>, ? extends TransformPayloadTranslator>
         getTransformPayloadTranslators() {
       return Collections.singletonMap(Read.Unbounded.class, new PubSubReadPayloadTranslator());

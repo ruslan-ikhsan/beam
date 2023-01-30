@@ -18,7 +18,6 @@
 package org.apache.beam.runners.flink.translation.wrappers.streaming;
 
 import static org.apache.beam.runners.core.StatefulDoFnRunner.TimeInternalsCleanupTimer.GC_TIMER_ID;
-import static org.apache.beam.runners.flink.translation.utils.FlinkPortableRunnerUtils.requiresStableInput;
 import static org.apache.beam.runners.flink.translation.utils.FlinkPortableRunnerUtils.requiresTimeSortedInput;
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
@@ -65,8 +64,6 @@ import org.apache.beam.runners.core.construction.graph.ExecutableStage;
 import org.apache.beam.runners.core.construction.graph.UserStateReference;
 import org.apache.beam.runners.flink.translation.functions.FlinkExecutableStageContextFactory;
 import org.apache.beam.runners.flink.translation.types.CoderTypeSerializer;
-import org.apache.beam.runners.flink.translation.utils.Locker;
-import org.apache.beam.runners.flink.translation.wrappers.streaming.stableinput.BufferingDoFnRunner;
 import org.apache.beam.runners.flink.translation.wrappers.streaming.state.FlinkStateInternals;
 import org.apache.beam.runners.fnexecution.control.BundleCheckpointHandler;
 import org.apache.beam.runners.fnexecution.control.BundleCheckpointHandlers;
@@ -174,7 +171,7 @@ public class ExecutableStageDoFnOperator<InputT, OutputT> extends DoFnOperator<I
   private transient long minEventTimeTimerTimestampInCurrentBundle;
 
   /** The input watermark before the current bundle started. */
-  private long inputWatermarkBeforeBundleStart = BoundedWindow.TIMESTAMP_MIN_VALUE.getMillis();
+  private transient long inputWatermarkBeforeBundleStart;
 
   /** Flag indicating whether the operator has been closed. */
   private transient boolean closed;
@@ -199,7 +196,7 @@ public class ExecutableStageDoFnOperator<InputT, OutputT> extends DoFnOperator<I
       Coder keyCoder,
       KeySelector<WindowedValue<InputT>, ?> keySelector) {
     super(
-        requiresStableInput(payload) ? new StableNoOpDoFn() : new NoOpDoFn(),
+        new NoOpDoFn(),
         stepName,
         windowedInputCoder,
         outputCoders,
@@ -229,13 +226,6 @@ public class ExecutableStageDoFnOperator<InputT, OutputT> extends DoFnOperator<I
         !windowedInputCoder.getCoderArguments().isEmpty(),
         "Empty arguments for WindowedValue Coder %s",
         windowedInputCoder);
-  }
-
-  @Override
-  <K> @Nullable KeyedStateBackend<K> getBufferingKeyedStateBackend() {
-    // do not use keyed backend for buffering if we do not process stateful DoFn
-    // ExecutableStage uses keyed backend by default
-    return isStateful ? super.getKeyedStateBackend() : null;
   }
 
   @Override
@@ -290,8 +280,8 @@ public class ExecutableStageDoFnOperator<InputT, OutputT> extends DoFnOperator<I
 
   @Override
   public final void notifyCheckpointComplete(long checkpointId) throws Exception {
-    super.notifyCheckpointComplete(checkpointId);
     finalizationHandler.finalizeAllOutstandingBundles();
+    super.notifyCheckpointComplete(checkpointId);
   }
 
   private BundleCheckpointHandler getBundleCheckpointHandler(boolean hasSDF) {
@@ -756,32 +746,6 @@ public class ExecutableStageDoFnOperator<InputT, OutputT> extends DoFnOperator<I
   }
 
   @Override
-  DoFnRunner<InputT, OutputT> createBufferingDoFnRunnerIfNeeded(
-      DoFnRunner<InputT, OutputT> wrappedRunner) throws Exception {
-
-    if (requiresStableInput) {
-      // put this in front of the root FnRunner before any additional wrappers
-      KeyedStateBackend<Object> keyedBufferingBackend = getBufferingKeyedStateBackend();
-      return this.bufferingDoFnRunner =
-          BufferingDoFnRunner.create(
-              wrappedRunner,
-              "stable-input-buffer",
-              windowedInputCoder,
-              windowingStrategy.getWindowFn().windowCoder(),
-              getOperatorStateBackend(),
-              keyedBufferingBackend,
-              numConcurrentCheckpoints,
-              serializedOptions,
-              keyedBufferingBackend != null ? () -> Locker.locked(stateBackendLock) : null,
-              keyedBufferingBackend != null
-                  ? input -> FlinkKeyUtils.encodeKey(((KV) input).getKey(), (Coder) keyCoder)
-                  : null,
-              sdkHarnessRunner::emitResults);
-    }
-    return wrappedRunner;
-  }
-
-  @Override
   protected DoFnRunner<InputT, OutputT> createWrappingDoFnRunner(
       DoFnRunner<InputT, OutputT> wrappedRunner, StepContext stepContext) {
     sdkHarnessRunner =
@@ -850,8 +814,6 @@ public class ExecutableStageDoFnOperator<InputT, OutputT> extends DoFnOperator<I
     // gives better throughput due to the bundle not getting cut on
     // every watermark. So we have implemented 2) below.
     //
-    potentialOutputWatermark =
-        super.applyOutputWatermarkHold(currentOutputWatermark, potentialOutputWatermark);
     if (sdkHarnessRunner.isBundleInProgress()) {
       if (minEventTimeTimerTimestampInLastBundle < Long.MAX_VALUE) {
         // We can safely advance the watermark to before the last bundle's minimum event timer
@@ -1093,7 +1055,7 @@ public class ExecutableStageDoFnOperator<InputT, OutputT> extends DoFnOperator<I
   }
 
   private DoFnRunner<InputT, OutputT> ensureStateDoFnRunner(
-      DoFnRunner<InputT, OutputT> sdkHarnessRunner,
+      SdkHarnessDoFnRunner<InputT, OutputT> sdkHarnessRunner,
       RunnerApi.ExecutableStagePayload payload,
       StepContext stepContext) {
 
@@ -1134,6 +1096,17 @@ public class ExecutableStageDoFnOperator<InputT, OutputT> extends DoFnOperator<I
         cleanupTimer,
         stateCleaner,
         requiresTimeSortedInput(payload, true)) {
+
+      @Override
+      public void processElement(WindowedValue<InputT> input) {
+        try (Locker locker = Locker.locked(stateBackendLock)) {
+          @SuppressWarnings({"unchecked", "rawtypes"})
+          final ByteBuffer key =
+              FlinkKeyUtils.encodeKey(((KV) input.getValue()).getKey(), (Coder) keyCoder);
+          getKeyedStateBackend().setCurrentKey(key);
+          super.processElement(input);
+        }
+      }
 
       @Override
       public void finishBundle() {
@@ -1302,9 +1275,23 @@ public class ExecutableStageDoFnOperator<InputT, OutputT> extends DoFnOperator<I
     public void doNothing(ProcessContext context) {}
   }
 
-  private static class StableNoOpDoFn<InputT, OutputT> extends DoFn<InputT, OutputT> {
-    @RequiresStableInput
-    @ProcessElement
-    public void doNothing(ProcessContext context) {}
+  private static class Locker implements AutoCloseable {
+
+    public static Locker locked(Lock lock) {
+      Locker locker = new Locker(lock);
+      lock.lock();
+      return locker;
+    }
+
+    private final Lock lock;
+
+    Locker(Lock lock) {
+      this.lock = lock;
+    }
+
+    @Override
+    public void close() {
+      lock.unlock();
+    }
   }
 }

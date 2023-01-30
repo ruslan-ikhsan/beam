@@ -20,6 +20,8 @@ import 'package:flutter/material.dart';
 
 import '../constants/sizes.dart';
 
+const kHeaderHeight = 50.0;
+
 class TabHeader extends StatelessWidget {
   final TabController tabController;
   final Widget tabsWidget;
@@ -33,7 +35,7 @@ class TabHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: BeamSizes.tabBarHeight,
+      height: 50,
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: BeamSizes.size16,

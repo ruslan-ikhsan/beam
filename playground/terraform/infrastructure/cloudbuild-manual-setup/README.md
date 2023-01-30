@@ -18,7 +18,10 @@
 # Beam Playground Cloud Build Setup
 
 This directory organizes Infrastructure-as-Code to provision dependent resources and set up Cloud Build for Beam Playground.
-Cloud Build triggers created by terraform scripts from this directory automate steps described in [readme](https://github.com/apache/beam/blob/master/playground/terraform/README.md).
+
+Playground deployment main data and scripts can be found by next locations:
+- [Playground deployment main directory](https://github.com/apache/beam/blob/master/playground/)
+- [Playground deployment main README file](https://github.com/apache/beam/blob/master/playground/terraform/README.md)
 
 ## Requirements:
 
@@ -41,8 +44,8 @@ Cloud Build triggers created by terraform scripts from this directory automate s
 
 The `playground/terraform/infrastructure/cloudbuild-manual-setup/01.setup` provisions dependencies required to set up Cloud Build for Playground:
 - Required API services
-- Cloud Build service account
-- IAM roles for Cloud Build service account
+- Cloud Build service account - `playground-cloudbuild-sa`
+- IAM permissions for Cloud Build service account - `playground-cloudbuild-sa`
 
 #### To execute the module:
 
@@ -88,7 +91,7 @@ cd ../02.builders
 
 # Run terraform commands
 terraform init -backend-config="bucket=$STATE_BUCKET"
-terraform apply -var="project_id=$(gcloud config get-value project)" -var="state_bucket=$STATE_BUCKET"
+terraform apply -var="project_id=$(gcloud config get-value project)"
 ```
 
 ## 4. Run Cloud Build `Playground-infrastructure-trigger` to deploy Playground infrastructure

@@ -280,7 +280,7 @@ func init() {
 }
 
 {{range $x := .Wraps -}}
-func wrapMaker{{$x.Name}}(fn any) map[string]reflectx.Func {
+func wrapMaker{{$x.Name}}(fn interface{}) map[string]reflectx.Func {
 	dfn := fn.(*{{$x.Type}})
 	return map[string]reflectx.Func{
 	{{- range $y := .Methods}}
@@ -295,7 +295,7 @@ type caller{{$x.Name}} struct {
 	fn {{$x.Type}}
 }
 
-func funcMaker{{$x.Name}}(fn any) reflectx.Func {
+func funcMaker{{$x.Name}}(fn interface{}) reflectx.Func {
 	f := fn.({{$x.Type}})
 	return &caller{{$x.Name}}{fn: f}
 }
@@ -308,12 +308,12 @@ func (c *caller{{$x.Name}}) Type() reflect.Type {
 	return reflect.TypeOf(c.fn)
 }
 
-func (c *caller{{$x.Name}}) Call(args []any) []any {
+func (c *caller{{$x.Name}}) Call(args []interface{}) []interface{} {
 	{{mktuplef (len $x.Out) "out%d"}}{{- if len $x.Out}} := {{end -}}c.fn({{mkparams "args[%d].(%v)" $x.In}})
-	return []any{ {{- mktuplef (len $x.Out) "out%d" -}} }
+	return []interface{}{ {{- mktuplef (len $x.Out) "out%d" -}} }
 }
 
-func (c *caller{{$x.Name}}) Call{{len $x.In}}x{{len $x.Out}}({{mkargs (len $x.In) "arg%v" "any"}}) ({{- mktuple (len $x.Out) "any"}}) {
+func (c *caller{{$x.Name}}) Call{{len $x.In}}x{{len $x.Out}}({{mkargs (len $x.In) "arg%v" "interface{}"}}) ({{- mktuple (len $x.Out) "interface{}"}}) {
 	{{if len $x.Out}}return {{end}}c.fn({{mkparams "arg%d.(%v)" $x.In}})
 }
 
@@ -321,7 +321,7 @@ func (c *caller{{$x.Name}}) Call{{len $x.In}}x{{len $x.Out}}({{mkargs (len $x.In
 {{- if .Emitters -}}
 type emitNative struct {
 	n     exec.ElementProcessor
-	fn    any
+	fn    interface{}
 	est   *sdf.WatermarkEstimator
 
 	ctx context.Context
@@ -337,7 +337,7 @@ func (e *emitNative) Init(ctx context.Context, ws []typex.Window, et typex.Event
 	return nil
 }
 
-func (e *emitNative) Value() any {
+func (e *emitNative) Value() interface{} {
 	return e.fn
 }
 
@@ -367,7 +367,7 @@ func (e *emitNative) invoke{{$x.Name}}({{if $x.Time -}} t typex.EventTime, {{end
 {{- if .Inputs -}}
 type iterNative struct {
 	s     exec.ReStream
-	fn    any
+	fn    interface{}
 
 	// cur is the "current" stream, if any.
 	cur exec.Stream
@@ -382,7 +382,7 @@ func (v *iterNative) Init() error {
 	return nil
 }
 
-func (v *iterNative) Value() any {
+func (v *iterNative) Value() interface{} {
 	return v.fn
 }
 
@@ -426,7 +426,7 @@ func (v *iterNative) read{{$x.Name}}({{if $x.Time -}} et *typex.EventTime, {{end
 `))
 
 // funcMap contains useful functions for use in the template.
-var funcMap template.FuncMap = map[string]any{
+var funcMap template.FuncMap = map[string]interface{}{
 	"mkargs":   mkargs,
 	"mkparams": mkparams,
 	"mkrets":   mkrets,

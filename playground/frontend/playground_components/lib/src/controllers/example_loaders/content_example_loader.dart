@@ -20,14 +20,9 @@ import '../../cache/example_cache.dart';
 import '../../models/example.dart';
 import '../../models/example_base.dart';
 import '../../models/example_loading_descriptors/content_example_loading_descriptor.dart';
-import '../../models/sdk.dart';
 import 'example_loader.dart';
 
-/// The [ExampleLoader] for [ContentExampleLoadingDescriptor].
-///
-/// Loads the example fully contained in the [descriptor].
 class ContentExampleLoader extends ExampleLoader {
-  @override
   final ContentExampleLoadingDescriptor descriptor;
 
   const ContentExampleLoader({
@@ -37,15 +32,15 @@ class ContentExampleLoader extends ExampleLoader {
   });
 
   @override
-  Sdk get sdk => descriptor.sdk;
-
-  @override
   Future<Example> get future async => Example(
         complexity: descriptor.complexity,
-        files: descriptor.files,
-        name: descriptor.name ?? 'Untitled Example',
+        description: '',
+        name: descriptor.name ?? 'Embedded_Example',
         path: '',
+        pipelineOptions: '',
         sdk: descriptor.sdk,
+        source: descriptor.content,
+        tags: [],
         type: ExampleType.example,
       );
 }

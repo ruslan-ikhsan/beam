@@ -39,7 +39,7 @@ final class TopicBacklogReaderImpl implements TopicBacklogReader {
   }
 
   @Override
-  @SuppressWarnings("assignment")
+  @SuppressWarnings("assignment.type.incompatible")
   public ComputeMessageStatsResponse computeMessageStats(Offset offset) throws ApiException {
     try {
       return client

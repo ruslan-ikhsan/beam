@@ -29,8 +29,7 @@ labels:
   - name: Python
     reviewers:
       - AnandInguva
-      - damccorm
-      - jrmccluskey
+      - ryanthompson591
       - tvalentyn
       - pabloem
     exclusionList: []
@@ -39,6 +38,7 @@ labels:
       - lukecwik
       - kennknowles
       - robertwb
+      - kileys
       - apilloud
     exclusionList: []
   - name: IO

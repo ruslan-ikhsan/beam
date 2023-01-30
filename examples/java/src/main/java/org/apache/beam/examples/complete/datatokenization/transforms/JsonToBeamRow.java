@@ -42,7 +42,7 @@ public class JsonToBeamRow extends PTransform<PCollection<String>, PCollection<R
   }
 
   @Override
-  @SuppressWarnings("argument")
+  @SuppressWarnings("argument.type.incompatible")
   public PCollection<Row> expand(PCollection<String> jsons) {
     ParseResult rows =
         jsons.apply(

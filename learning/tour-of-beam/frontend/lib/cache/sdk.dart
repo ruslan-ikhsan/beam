@@ -18,18 +18,21 @@
 
 import 'dart:async';
 
+import 'package:flutter/widgets.dart';
 import 'package:playground_components/playground_components.dart';
 
+import '../repositories/client/client.dart';
 import '../repositories/models/get_sdks_response.dart';
-import 'cache.dart';
 
-class SdkCache extends Cache {
-  SdkCache({
-    required super.client,
-  });
+class SdkCache extends ChangeNotifier {
+  final TobClient client;
 
   final _sdks = <Sdk>[];
   Future<GetSdksResponse>? _future;
+
+  SdkCache({
+    required this.client,
+  });
 
   List<Sdk> getSdks() {
     if (_future == null) {

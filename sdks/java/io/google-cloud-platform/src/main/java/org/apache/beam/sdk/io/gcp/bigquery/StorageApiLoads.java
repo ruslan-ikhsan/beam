@@ -54,8 +54,6 @@ public class StorageApiLoads<DestinationT, ElementT>
   private final int numShards;
   private final boolean allowInconsistentWrites;
   private final boolean allowAutosharding;
-  private final boolean autoUpdateSchema;
-  private final boolean ignoreUnknownValues;
 
   public StorageApiLoads(
       Coder<DestinationT> destinationCoder,
@@ -66,9 +64,7 @@ public class StorageApiLoads<DestinationT, ElementT>
       BigQueryServices bqServices,
       int numShards,
       boolean allowInconsistentWrites,
-      boolean allowAutosharding,
-      boolean autoUpdateSchema,
-      boolean ignoreUnknownValues) {
+      boolean allowAutosharding) {
     this.destinationCoder = destinationCoder;
     this.dynamicDestinations = dynamicDestinations;
     this.createDisposition = createDisposition;
@@ -78,8 +74,6 @@ public class StorageApiLoads<DestinationT, ElementT>
     this.numShards = numShards;
     this.allowInconsistentWrites = allowInconsistentWrites;
     this.allowAutosharding = allowAutosharding;
-    this.autoUpdateSchema = autoUpdateSchema;
-    this.ignoreUnknownValues = ignoreUnknownValues;
   }
 
   @Override
@@ -132,9 +126,7 @@ public class StorageApiLoads<DestinationT, ElementT>
                     dynamicDestinations,
                     bqServices,
                     failedRowsTag,
-                    BigQueryStorageApiInsertErrorCoder.of(),
-                    autoUpdateSchema,
-                    ignoreUnknownValues));
+                    BigQueryStorageApiInsertErrorCoder.of()));
 
     PCollection<BigQueryStorageApiInsertError> insertErrors =
         PCollectionList.of(convertMessagesResult.get(failedRowsTag))
@@ -208,9 +200,7 @@ public class StorageApiLoads<DestinationT, ElementT>
                 bqServices,
                 destinationCoder,
                 BigQueryStorageApiInsertErrorCoder.of(),
-                failedRowsTag,
-                autoUpdateSchema,
-                ignoreUnknownValues));
+                failedRowsTag));
 
     PCollection<BigQueryStorageApiInsertError> insertErrors =
         PCollectionList.of(convertMessagesResult.get(failedRowsTag))
@@ -281,9 +271,7 @@ public class StorageApiLoads<DestinationT, ElementT>
                     dynamicDestinations,
                     bqServices,
                     failedRowsTag,
-                    BigQueryStorageApiInsertErrorCoder.of(),
-                    autoUpdateSchema,
-                    ignoreUnknownValues));
+                    BigQueryStorageApiInsertErrorCoder.of()));
 
     PCollection<BigQueryStorageApiInsertError> insertErrors =
         PCollectionList.of(convertMessagesResult.get(failedRowsTag))

@@ -29,11 +29,14 @@ import org.junit.runners.JUnit4;
 
 /** Tests of {@link KafkaIOUtils}. */
 @RunWith(JUnit4.class)
+@SuppressWarnings({
+  "rawtypes", // TODO(https://github.com/apache/beam/issues/20447)
+})
 public class KafkaIOUtilsTest {
 
   @Test
   public void testOffsetConsumerConfigOverrides() throws Exception {
-    KafkaIO.Read<?, ?> spec =
+    KafkaIO.Read spec =
         KafkaIO.read()
             .withBootstrapServers("broker_1:9092,broker_2:9092")
             .withTopic("my_topic")
@@ -51,7 +54,7 @@ public class KafkaIOUtilsTest {
     assertEquals("read_uncommitted", offsetConfig.get(ConsumerConfig.ISOLATION_LEVEL_CONFIG));
 
     String offsetGroupId = "group.offsetConsumer";
-    KafkaIO.Read<?, ?> spec2 =
+    KafkaIO.Read spec2 =
         KafkaIO.read()
             .withBootstrapServers("broker_1:9092,broker_2:9092")
             .withTopic("my_topic")

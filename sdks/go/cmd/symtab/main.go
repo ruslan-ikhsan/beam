@@ -77,7 +77,7 @@ func main() {
 		log.Fatalf("error creating function out of address")
 		return
 	}
-	ret.Fn.Call([]any{arg})
+	ret.Fn.Call([]interface{}{arg})
 
 	// Checks that function was executed.
 	if counter != 1 {

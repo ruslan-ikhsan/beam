@@ -31,17 +31,15 @@ class ShortcutRow extends StatelessWidget {
     // wrap with row to shrink container to child size
     return Row(
       children: [
-        Flexible(
-          child: Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: primaryColor),
-              borderRadius: BorderRadius.circular(kSmBorderRadius),
-            ),
-            padding: const EdgeInsets.all(kMdSpacing),
-            child: Text(
-              shortcut.title,
-              style: TextStyle(color: primaryColor),
-            ),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: primaryColor),
+            borderRadius: BorderRadius.circular(kSmBorderRadius),
+          ),
+          padding: const EdgeInsets.all(kMdSpacing),
+          child: Text(
+            shortcut.title,
+            style: TextStyle(color: primaryColor),
           ),
         ),
       ],

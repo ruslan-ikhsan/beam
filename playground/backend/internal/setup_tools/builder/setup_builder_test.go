@@ -16,22 +16,20 @@
 package builder
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
-	"reflect"
-	"strings"
-	"sync"
-	"testing"
-
-	"github.com/google/uuid"
-
 	pb "beam.apache.org/playground/backend/internal/api/v1"
 	"beam.apache.org/playground/backend/internal/environment"
 	"beam.apache.org/playground/backend/internal/executors"
 	"beam.apache.org/playground/backend/internal/fs_tool"
 	"beam.apache.org/playground/backend/internal/preparers"
 	"beam.apache.org/playground/backend/internal/validators"
+	"fmt"
+	"github.com/google/uuid"
+	"os"
+	"path/filepath"
+	"reflect"
+	"strings"
+	"sync"
+	"testing"
 )
 
 const emptyFolder = "emptyFolder"
@@ -206,7 +204,7 @@ func TestPreparer(t *testing.T) {
 	validationResults.Store(validators.UnitTestValidatorName, false)
 	validationResults.Store(validators.KatasValidatorName, false)
 
-	pythonPrep, err := preparers.GetPreparers(pythonSdkEnv.ApacheBeamSdk, pythonPaths.AbsoluteSourceFilePath, &validationResults, nil)
+	pythonPrep, err := preparers.GetPreparers(pythonSdkEnv.ApacheBeamSdk, pythonPaths.AbsoluteSourceFilePath, &validationResults)
 	if err != nil {
 		panic(err)
 	}
@@ -215,7 +213,7 @@ func TestPreparer(t *testing.T) {
 		WithPreparer().
 		WithSdkPreparers(pythonPrep)
 
-	goPrep, err := preparers.GetPreparers(goSdkEnv.ApacheBeamSdk, goPaths.AbsoluteSourceFilePath, &validationResults, nil)
+	goPrep, err := preparers.GetPreparers(goSdkEnv.ApacheBeamSdk, goPaths.AbsoluteSourceFilePath, &validationResults)
 	if err != nil {
 		panic(err)
 	}
@@ -223,7 +221,7 @@ func TestPreparer(t *testing.T) {
 		WithPreparer().
 		WithSdkPreparers(goPrep)
 
-	javaPrep, err := preparers.GetPreparers(javaSdkEnv.ApacheBeamSdk, javaPaths.AbsoluteSourceFilePath, &validationResults, nil)
+	javaPrep, err := preparers.GetPreparers(javaSdkEnv.ApacheBeamSdk, javaPaths.AbsoluteSourceFilePath, &validationResults)
 	if err != nil {
 		panic(err)
 	}
@@ -231,7 +229,7 @@ func TestPreparer(t *testing.T) {
 		WithPreparer().
 		WithSdkPreparers(javaPrep)
 
-	scioPrep, err := preparers.GetPreparers(scioSdkEnv.ApacheBeamSdk, scioPaths.AbsoluteSourceFilePath, &validationResults, nil)
+	scioPrep, err := preparers.GetPreparers(scioSdkEnv.ApacheBeamSdk, scioPaths.AbsoluteSourceFilePath, &validationResults)
 	if err != nil {
 		panic(err)
 	}
@@ -290,7 +288,7 @@ func TestPreparer(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Preparer(&tt.args.paths, tt.args.sdkEnv, tt.args.valResults, nil)
+			got, err := Preparer(&tt.args.paths, tt.args.sdkEnv, tt.args.valResults)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Preparer() error = %v, wantErr %v", err, tt.wantErr)
 				return

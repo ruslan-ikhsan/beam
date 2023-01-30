@@ -25,6 +25,7 @@ import static org.hamcrest.Matchers.isOneOf;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+import org.apache.beam.runners.spark.aggregators.AggregatorsAccumulator;
 import org.apache.beam.runners.spark.metrics.MetricsAccumulator;
 import org.apache.beam.runners.spark.stateful.SparkTimerInternals;
 import org.apache.beam.runners.spark.util.GlobalWatermarkHolder;
@@ -87,6 +88,7 @@ public final class TestSparkRunner extends PipelineRunner<SparkPipelineResult> {
     SparkPipelineResult result = null;
 
     // clear state of Aggregators, Metrics and Watermarks if exists.
+    AggregatorsAccumulator.clear();
     MetricsAccumulator.clear();
     GlobalWatermarkHolder.clear();
 

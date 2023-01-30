@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.annotation.Nullable;
@@ -71,6 +72,7 @@ public class PrecombineGroupingTable<K, InputT, AccumT>
         keyCoder,
         GlobalCombineFnRunners.create(combineFn),
         Caches::weigh,
+        Caches::weigh,
         isGloballyWindowed);
   }
 
@@ -91,7 +93,8 @@ public class PrecombineGroupingTable<K, InputT, AccumT>
         cache,
         keyCoder,
         GlobalCombineFnRunners.create(combineFn),
-        new SamplingSizeEstimator(Caches::weigh, sizeEstimatorSampleRate, 1.0),
+        new SamplingSizeEstimator<>(Caches::weigh, sizeEstimatorSampleRate, 1.0),
+        new SamplingSizeEstimator<>(Caches::weigh, sizeEstimatorSampleRate, 1.0),
         isGloballyWindowed);
   }
 
@@ -115,19 +118,20 @@ public class PrecombineGroupingTable<K, InputT, AccumT>
 
   /** Provides client-specific operations for size estimates. */
   @FunctionalInterface
-  public interface SizeEstimator {
-    long estimateSize(Object element);
+  public interface SizeEstimator<T> {
+    long estimateSize(T element);
   }
 
   private final Coder<K> keyCoder;
   private final GlobalCombineFnRunner<InputT, AccumT, ?> combineFn;
   private final PipelineOptions options;
-  private final SizeEstimator sizer;
+  private final SizeEstimator<K> keySizer;
+  private final SizeEstimator<AccumT> accumulatorSizer;
   private final Cache<Key, PrecombineGroupingTable<K, InputT, AccumT>> cache;
   private final LinkedHashMap<GroupingTableKey, GroupingTableEntry> lruMap;
   private final AtomicLong maxWeight;
   private long weight;
-  private final boolean isGloballyWindowed;
+  private boolean isGloballyWindowed;
   private long checkFlushCounter;
   private long checkFlushLimit = -5;
 
@@ -148,13 +152,15 @@ public class PrecombineGroupingTable<K, InputT, AccumT>
       Cache<?, ?> cache,
       Coder<K> keyCoder,
       GlobalCombineFnRunner<InputT, AccumT, ?> combineFn,
-      SizeEstimator sizer,
+      SizeEstimator<K> keySizer,
+      SizeEstimator<AccumT> accumulatorSizer,
       boolean isGloballyWindowed) {
     this.options = options;
     this.cache = (Cache<Key, PrecombineGroupingTable<K, InputT, AccumT>>) cache;
     this.keyCoder = keyCoder;
     this.combineFn = combineFn;
-    this.sizer = sizer;
+    this.keySizer = keySizer;
+    this.accumulatorSizer = accumulatorSizer;
     this.isGloballyWindowed = isGloballyWindowed;
     this.lruMap = new LinkedHashMap<>(16, 0.75f, true);
     this.maxWeight = new AtomicLong();
@@ -174,8 +180,7 @@ public class PrecombineGroupingTable<K, InputT, AccumT>
     int hashCode();
   }
 
-  @VisibleForTesting
-  static class WindowedGroupingTableKey implements GroupingTableKey {
+  private static class WindowedGroupingTableKey implements GroupingTableKey {
     private final Object structuralKey;
     private final Collection<? extends BoundedWindow> windows;
     private final long weight;
@@ -184,10 +189,16 @@ public class PrecombineGroupingTable<K, InputT, AccumT>
         K key,
         Collection<? extends BoundedWindow> windows,
         Coder<K> keyCoder,
-        SizeEstimator sizer) {
+        SizeEstimator<K> keySizer) {
       this.structuralKey = keyCoder.structuralValue(key);
       this.windows = windows;
-      this.weight = sizer.estimateSize(this);
+      // We account for the weight of the key using the keySizer if the coder's structural value
+      // is the same as its value.
+      if (structuralKey == key) {
+        weight = keySizer.estimateSize(key) + Caches.weigh(windows);
+      } else {
+        weight = Caches.weigh(this);
+      }
     }
 
     @Override
@@ -214,12 +225,12 @@ public class PrecombineGroupingTable<K, InputT, AccumT>
         return false;
       }
       WindowedGroupingTableKey that = (WindowedGroupingTableKey) o;
-      return structuralKey.equals(that.structuralKey) && windows.equals(that.windows);
+      return Objects.equals(structuralKey, that.structuralKey) && windows.equals(that.windows);
     }
 
     @Override
     public int hashCode() {
-      return structuralKey.hashCode() * 31 + windows.hashCode();
+      return Objects.hash(structuralKey, windows);
     }
 
     @Override
@@ -235,17 +246,21 @@ public class PrecombineGroupingTable<K, InputT, AccumT>
     }
   }
 
-  @VisibleForTesting
-  static class GloballyWindowedTableGroupingKey implements GroupingTableKey {
+  private static class GloballyWindowedTableGroupingKey implements GroupingTableKey {
     private static final Collection<? extends BoundedWindow> GLOBAL_WINDOWS =
         Collections.singletonList(GlobalWindow.INSTANCE);
 
     private final Object structuralKey;
     private final long weight;
 
-    private <K> GloballyWindowedTableGroupingKey(K key, Coder<K> keyCoder, SizeEstimator sizer) {
-      this.structuralKey = keyCoder.structuralValue(key);
-      this.weight = sizer.estimateSize(this);
+    private <K> GloballyWindowedTableGroupingKey(
+        K key, Coder<K> keyCoder, SizeEstimator<K> keySizer) {
+      structuralKey = keyCoder.structuralValue(key);
+      if (structuralKey == key) {
+        weight = keySizer.estimateSize(key);
+      } else {
+        weight = Caches.weigh(this);
+      }
     }
 
     @Override
@@ -272,17 +287,16 @@ public class PrecombineGroupingTable<K, InputT, AccumT>
         return false;
       }
       GloballyWindowedTableGroupingKey that = (GloballyWindowedTableGroupingKey) o;
-      return structuralKey.equals(that.structuralKey);
+      return Objects.equals(structuralKey, that.structuralKey);
     }
 
     @Override
     public int hashCode() {
-      return structuralKey.hashCode();
+      return Objects.hashCode(structuralKey);
     }
   }
 
-  @VisibleForTesting
-  class GroupingTableEntry implements Weighted {
+  private class GroupingTableEntry implements Weighted {
     private final GroupingTableKey groupingKey;
     private final K userKey;
     // The PGBK output will inherit the timestamp of one of its inputs.
@@ -305,13 +319,13 @@ public class PrecombineGroupingTable<K, InputT, AccumT>
         // by the cache so the accounting of the size of the key is occurring already.
         this.keySize = Caches.REFERENCE_SIZE * 2;
       } else {
-        this.keySize = Caches.REFERENCE_SIZE + sizer.estimateSize(userKey);
+        this.keySize = Caches.REFERENCE_SIZE + keySizer.estimateSize(userKey);
       }
       this.accumulator =
           combineFn.createAccumulator(
               options, NullSideInputReader.empty(), groupingKey.getWindows());
       add(initialInputValue);
-      this.accumulatorSize = sizer.estimateSize(accumulator);
+      this.accumulatorSize = accumulatorSizer.estimateSize(accumulator);
     }
 
     public GroupingTableKey getGroupingKey() {
@@ -340,7 +354,7 @@ public class PrecombineGroupingTable<K, InputT, AccumT>
         accumulator =
             combineFn.compact(
                 accumulator, options, NullSideInputReader.empty(), groupingKey.getWindows());
-        accumulatorSize = sizer.estimateSize(accumulator);
+        accumulatorSize = accumulatorSizer.estimateSize(accumulator);
         dirty = false;
       }
     }
@@ -350,7 +364,7 @@ public class PrecombineGroupingTable<K, InputT, AccumT>
       accumulator =
           combineFn.addInput(
               accumulator, value, options, NullSideInputReader.empty(), groupingKey.getWindows());
-      accumulatorSize = sizer.estimateSize(accumulator);
+      accumulatorSize = accumulatorSizer.estimateSize(accumulator);
     }
 
     @Override
@@ -384,9 +398,9 @@ public class PrecombineGroupingTable<K, InputT, AccumT>
     // The Pre-combine output will inherit the timestamp of one of its inputs.
     GroupingTableKey groupingKey =
         isGloballyWindowed
-            ? new GloballyWindowedTableGroupingKey(value.getValue().getKey(), keyCoder, sizer)
+            ? new GloballyWindowedTableGroupingKey(value.getValue().getKey(), keyCoder, keySizer)
             : new WindowedGroupingTableKey(
-                value.getValue().getKey(), value.getWindows(), keyCoder, sizer);
+                value.getValue().getKey(), value.getWindows(), keyCoder, keySizer);
 
     lruMap.compute(
         groupingKey,
@@ -469,7 +483,7 @@ public class PrecombineGroupingTable<K, InputT, AccumT>
                 KV.of(entry.getKey(), entry.getAccumulator()),
                 entry.getOutputTimestamp(),
                 entry.getGroupingKey().getWindows(),
-                // The PaneInfo will always be overwritten by the GBK.
+                // The PaneInfow will always be overwritten by the GBK.
                 PaneInfo.NO_FIRING));
   }
 
@@ -491,7 +505,7 @@ public class PrecombineGroupingTable<K, InputT, AccumT>
    * expensive) estimator for some elements and returning the average value for others.
    */
   @VisibleForTesting
-  static class SamplingSizeEstimator implements SizeEstimator {
+  static class SamplingSizeEstimator<T> implements SizeEstimator<T> {
 
     /**
      * The degree of confidence required in our expected value predictions before we allow
@@ -512,7 +526,7 @@ public class PrecombineGroupingTable<K, InputT, AccumT>
     /** Default number of elements that must be measured before elements are skipped. */
     static final long DEFAULT_MIN_SAMPLED = 20;
 
-    private final SizeEstimator underlying;
+    private final SizeEstimator<T> underlying;
     private final double minSampleRate;
     private final double maxSampleRate;
     private final long minSampled;
@@ -527,13 +541,13 @@ public class PrecombineGroupingTable<K, InputT, AccumT>
     private long nextSample = 0;
 
     private SamplingSizeEstimator(
-        SizeEstimator underlying, double minSampleRate, double maxSampleRate) {
+        SizeEstimator<T> underlying, double minSampleRate, double maxSampleRate) {
       this(underlying, minSampleRate, maxSampleRate, DEFAULT_MIN_SAMPLED, new Random());
     }
 
     @VisibleForTesting
     SamplingSizeEstimator(
-        SizeEstimator underlying,
+        SizeEstimator<T> underlying,
         double minSampleRate,
         double maxSampleRate,
         long minSampled,
@@ -546,7 +560,7 @@ public class PrecombineGroupingTable<K, InputT, AccumT>
     }
 
     @Override
-    public long estimateSize(Object element) {
+    public long estimateSize(T element) {
       if (sampleNow()) {
         return recordSample(underlying.estimateSize(element));
       } else {

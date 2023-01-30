@@ -71,6 +71,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+@SuppressWarnings({
+  "rawtypes", // TODO(https://github.com/apache/beam/issues/20447)
+})
 public class ReadFromKafkaDoFnTest {
 
   private final TopicPartition topicPartition = new TopicPartition("topic", 0);
@@ -90,7 +93,7 @@ public class ReadFromKafkaDoFnTest {
       ReadFromKafkaDoFn.create(makeReadSourceDescriptor(exceptionConsumer));
 
   private ReadSourceDescriptors<String, String> makeReadSourceDescriptor(
-      Consumer<byte[], byte[]> kafkaMockConsumer) {
+      Consumer kafkaMockConsumer) {
     return ReadSourceDescriptors.<String, String>read()
         .withKeyDeserializer(StringDeserializer.class)
         .withValueDeserializer(StringDeserializer.class)
@@ -222,7 +225,7 @@ public class ReadFromKafkaDoFnTest {
       if (records.isEmpty()) {
         return ConsumerRecords.empty();
       }
-      return new ConsumerRecords<>(ImmutableMap.of(topicPartition, records));
+      return new ConsumerRecords(ImmutableMap.of(topicPartition, records));
     }
 
     @Override
@@ -388,7 +391,8 @@ public class ReadFromKafkaDoFnTest {
         new OffsetRangeTracker(new OffsetRange(startOffset, startOffset + 3));
     KafkaSourceDescriptor descriptor =
         KafkaSourceDescriptor.of(topicPartition, null, null, null, null, null);
-    ProcessContinuation result = dofnInstance.processElement(descriptor, tracker, null, receiver);
+    ProcessContinuation result =
+        dofnInstance.processElement(descriptor, tracker, null, (OutputReceiver) receiver);
     assertEquals(ProcessContinuation.stop(), result);
     assertEquals(
         createExpectedRecords(descriptor, startOffset, 3, "key", "value"), receiver.getOutputs());
@@ -404,7 +408,7 @@ public class ReadFromKafkaDoFnTest {
             KafkaSourceDescriptor.of(topicPartition, null, null, null, null, null),
             tracker,
             null,
-            receiver);
+            (OutputReceiver) receiver);
     assertEquals(ProcessContinuation.resume(), result);
     assertTrue(receiver.getOutputs().isEmpty());
   }
@@ -420,7 +424,7 @@ public class ReadFromKafkaDoFnTest {
             KafkaSourceDescriptor.of(topicPartition, null, null, null, null, null),
             tracker,
             null,
-            receiver);
+            (OutputReceiver) receiver);
     assertEquals(ProcessContinuation.stop(), result);
   }
 
@@ -448,7 +452,7 @@ public class ReadFromKafkaDoFnTest {
             KafkaSourceDescriptor.of(topicPartition, null, null, null, null, null),
             tracker,
             null,
-            receiver);
+            (OutputReceiver) receiver);
     tracker.checkDone();
     assertEquals(ProcessContinuation.stop(), result);
   }
@@ -465,7 +469,7 @@ public class ReadFromKafkaDoFnTest {
         KafkaSourceDescriptor.of(topicPartition, null, null, null, null, null),
         tracker,
         null,
-        receiver);
+        (OutputReceiver) receiver);
   }
 
   private static final TypeDescriptor<KafkaSourceDescriptor>
@@ -504,12 +508,12 @@ public class ReadFromKafkaDoFnTest {
   }
 
   static class BoundednessVisitor extends PipelineVisitor.Defaults {
-    final List<PCollection<?>> unboundedPCollections = new ArrayList<>();
+    final List<PCollection> unboundedPCollections = new ArrayList<>();
 
     @Override
     public void visitValue(PValue value, Node producer) {
       if (value instanceof PCollection) {
-        PCollection<?> pc = (PCollection<?>) value;
+        PCollection pc = (PCollection) value;
         if (pc.isBounded() == IsBounded.UNBOUNDED) {
           unboundedPCollections.add(pc);
         }

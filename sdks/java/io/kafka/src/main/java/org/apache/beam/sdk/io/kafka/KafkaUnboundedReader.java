@@ -73,6 +73,9 @@ import org.slf4j.LoggerFactory;
  * An unbounded reader to read from Kafka. Each reader consumes messages from one or more Kafka
  * partitions. See {@link KafkaIO} for user visible documentation and example usage.
  */
+@SuppressWarnings({
+  "rawtypes" // TODO(https://github.com/apache/beam/issues/20447)
+})
 class KafkaUnboundedReader<K, V> extends UnboundedReader<KafkaRecord<K, V>> {
 
   ///////////////////// Reader API ////////////////////////////////////////////////////////////
@@ -99,7 +102,7 @@ class KafkaUnboundedReader<K, V> extends UnboundedReader<KafkaRecord<K, V>> {
     // Initialize partition in a separate thread and cancel it if takes longer than a minute.
     // This problem of blocking API calls to kafka is solved in higher versions of kafka
     // client by `KIP-266`
-    for (final PartitionState<K, V> pState : partitionStates) {
+    for (final PartitionState pState : partitionStates) {
       Future<?> future = consumerPollThread.submit(() -> setupInitialOffset(pState));
       try {
         Duration timeout = resolveDefaultApiTimeout(spec);
@@ -292,7 +295,7 @@ class KafkaUnboundedReader<K, V> extends UnboundedReader<KafkaRecord<K, V>> {
   public long getSplitBacklogBytes() {
     long backlogBytes = 0;
 
-    for (PartitionState<K, V> p : partitionStates) {
+    for (PartitionState p : partitionStates) {
       long pBacklog = p.approxBacklogInBytes();
       if (pBacklog == UnboundedReader.BACKLOG_UNKNOWN) {
         return UnboundedReader.BACKLOG_UNKNOWN;
@@ -625,7 +628,7 @@ class KafkaUnboundedReader<K, V> extends UnboundedReader<KafkaRecord<K, V>> {
     curBatch = Iterators.cycle(new ArrayList<>(partitionStates));
   }
 
-  private void setupInitialOffset(PartitionState<K, V> pState) {
+  private void setupInitialOffset(PartitionState pState) {
     Read<K, V> spec = source.getSpec();
     Consumer<byte[], byte[]> consumer = Preconditions.checkStateNotNull(this.consumer);
 
@@ -651,7 +654,7 @@ class KafkaUnboundedReader<K, V> extends UnboundedReader<KafkaRecord<K, V>> {
   // Called from setupInitialOffset() at the start and then periodically from offsetFetcher thread.
   private void updateLatestOffsets() {
     Consumer<byte[], byte[]> offsetConsumer = Preconditions.checkStateNotNull(this.offsetConsumer);
-    for (PartitionState<K, V> p : partitionStates) {
+    for (PartitionState p : partitionStates) {
       try {
         Instant fetchTime = Instant.now();
         ConsumerSpEL.evaluateSeek2End(offsetConsumer, p.topicPartition);
@@ -689,7 +692,7 @@ class KafkaUnboundedReader<K, V> extends UnboundedReader<KafkaRecord<K, V>> {
   private long getSplitBacklogMessageCount() {
     long backlogCount = 0;
 
-    for (PartitionState<K, V> p : partitionStates) {
+    for (PartitionState p : partitionStates) {
       long pBacklog = p.backlogMessageCount();
       if (pBacklog == UnboundedReader.BACKLOG_UNKNOWN) {
         return UnboundedReader.BACKLOG_UNKNOWN;

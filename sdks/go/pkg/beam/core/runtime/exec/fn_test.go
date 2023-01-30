@@ -43,10 +43,10 @@ func continuationsEqual(first, second sdf.ProcessContinuation) bool {
 // TestInvoke verifies the various forms of input to Invoke are handled correctly.
 func TestInvoke(t *testing.T) {
 	tests := []struct {
-		Fn                   any
+		Fn                   interface{}
 		Opt                  *MainInput
-		Args                 []any
-		Expected, Expected2  any
+		Args                 []interface{}
+		Expected, Expected2  interface{}
 		ExpectedTime         typex.EventTime
 		ExpectedContinuation sdf.ProcessContinuation
 		ExpectedError        error
@@ -62,25 +62,25 @@ func TestInvoke(t *testing.T) {
 		{
 			// Sum
 			Fn:       func(a, b, c int) int { return a + b + c },
-			Args:     []any{1, 2, 3},
+			Args:     []interface{}{1, 2, 3},
 			Expected: 6,
 		},
 		{
 			// Concat
 			Fn:       func(a, b, c string) string { return a + b + c },
-			Args:     []any{"a", "b", "c"},
+			Args:     []interface{}{"a", "b", "c"},
 			Expected: "abc",
 		},
 		{
 			// Length (slice type)
 			Fn:       func(list []int) (int, error) { return len(list), nil },
-			Args:     []any{[]int{1, 2, 3}},
+			Args:     []interface{}{[]int{1, 2, 3}},
 			Expected: 3,
 		},
 		{
 			// Emitter
 			Fn:   func(emit func(int)) { emit(1) },
-			Args: []any{func(int) {}},
+			Args: []interface{}{func(int) {}},
 		},
 		{
 			// Side input
@@ -91,7 +91,7 @@ func TestInvoke(t *testing.T) {
 				}
 				return ret
 			},
-			Args:     []any{1, func(out *int) bool { *out = 2; return true }},
+			Args:     []interface{}{1, func(out *int) bool { *out = 2; return true }},
 			Expected: 2,
 		},
 		{
@@ -104,21 +104,21 @@ func TestInvoke(t *testing.T) {
 				}
 				return ret
 			},
-			Args:     []any{1, func(_ int) func(*int) bool { return func(out *int) bool { *out = 2; return true } }},
+			Args:     []interface{}{1, func(_ int) func(*int) bool { return func(out *int) bool { *out = 2; return true } }},
 			Expected: 2,
 		},
 		{
 			// Sum as Main
 			Fn:       func(a, b, c int) int { return a + b + c },
 			Opt:      &MainInput{Key: FullValue{Elm: 1}},
-			Args:     []any{2, 3},
+			Args:     []interface{}{2, 3},
 			Expected: 6,
 		},
 		{
 			// Sum as Main KV
 			Fn:       func(a, b, c int) int { return a + b + c },
 			Opt:      &MainInput{Key: FullValue{Elm: 1, Elm2: 2}},
-			Args:     []any{3},
+			Args:     []interface{}{3},
 			Expected: 6,
 		},
 		{
@@ -389,10 +389,10 @@ func TestRegisterCallback(t *testing.T) {
 func BenchmarkInvoke(b *testing.B) {
 	tests := []struct {
 		Name     string
-		Fn       any
+		Fn       interface{}
 		Opt      *MainInput
-		Args     []any
-		Expected any
+		Args     []interface{}
+		Expected interface{}
 	}{
 		{
 			Name: "Void function",
@@ -405,25 +405,25 @@ func BenchmarkInvoke(b *testing.B) {
 		{
 			Name:     "Sum",
 			Fn:       func(a, b, c int) int { return a + b + c },
-			Args:     []any{1, 2, 3},
+			Args:     []interface{}{1, 2, 3},
 			Expected: 6,
 		},
 		{
 			Name:     "Concat",
 			Fn:       func(a, b, c string) string { return a + b + c },
-			Args:     []any{"a", "b", "c"},
+			Args:     []interface{}{"a", "b", "c"},
 			Expected: "abc",
 		},
 		{
 			Name:     "Length (slice type)",
 			Fn:       func(list []int) (int, error) { return len(list), nil },
-			Args:     []any{[]int{1, 2, 3}},
+			Args:     []interface{}{[]int{1, 2, 3}},
 			Expected: 3,
 		},
 		{
 			Name: "Emitter",
 			Fn:   func(emit func(int)) { emit(1) },
-			Args: []any{func(int) {}},
+			Args: []interface{}{func(int) {}},
 		},
 		{
 			Name: "Side input",
@@ -434,21 +434,21 @@ func BenchmarkInvoke(b *testing.B) {
 				}
 				return ret
 			},
-			Args:     []any{1, func(out *int) bool { *out = 2; return true }},
+			Args:     []interface{}{1, func(out *int) bool { *out = 2; return true }},
 			Expected: 2,
 		},
 		{
 			Name:     "Sum as Main",
 			Fn:       func(a, b, c int) int { return a + b + c },
 			Opt:      &MainInput{Key: FullValue{Elm: 1}},
-			Args:     []any{2, 3},
+			Args:     []interface{}{2, 3},
 			Expected: 6,
 		},
 		{
 			Name:     "Sum as Main KV",
 			Fn:       func(a, b, c int) int { return a + b + c },
 			Opt:      &MainInput{Key: FullValue{Elm: 1, Elm2: 2}},
-			Args:     []any{3},
+			Args:     []interface{}{3},
 			Expected: 6,
 		},
 		{
@@ -651,7 +651,7 @@ type callerFooRInt struct {
 	fn func(*Foo, int) int
 }
 
-func funcMakerFooRInt(fn any) reflectx.Func {
+func funcMakerFooRInt(fn interface{}) reflectx.Func {
 	f := fn.(func(*Foo, int) int)
 	return &callerFooRInt{fn: f}
 }
@@ -664,13 +664,13 @@ func (c *callerFooRInt) Type() reflect.Type {
 	return reflect.TypeOf(c.fn)
 }
 
-func (c *callerFooRInt) Call(args []any) []any {
+func (c *callerFooRInt) Call(args []interface{}) []interface{} {
 	a := c.fn(args[0].(*Foo), args[1].(int))
-	return []any{a}
+	return []interface{}{a}
 }
 
 // To satisfy reflectx.Func2x1
-func (c *callerFooRInt) Call2x1(a1, a2 any) any {
+func (c *callerFooRInt) Call2x1(a1, a2 interface{}) interface{} {
 	return c.fn(a1.(*Foo), a2.(int))
 }
 
@@ -679,7 +679,7 @@ type callerInt struct {
 	fn func(int) int
 }
 
-func funcMakerInt(fn any) reflectx.Func {
+func funcMakerInt(fn interface{}) reflectx.Func {
 	f := fn.(func(int) int)
 	return &callerInt{fn: f}
 }
@@ -692,12 +692,12 @@ func (c *callerInt) Type() reflect.Type {
 	return reflect.TypeOf(c.fn)
 }
 
-func (c *callerInt) Call(args []any) []any {
+func (c *callerInt) Call(args []interface{}) []interface{} {
 	a := c.fn(args[0].(int))
-	return []any{a}
+	return []interface{}{a}
 }
 
-func (c *callerInt) Call1x1(a0 any) any {
+func (c *callerInt) Call1x1(a0 interface{}) interface{} {
 	return c.fn(a0.(int))
 }
 
@@ -708,11 +708,11 @@ func (c *callerInt) Call1x1(a0 any) any {
 // * Implicit or Explicit method Receiver
 // * Pre-wrapped values and pre-allocated slices.
 // * Invocations along the following ways
-//   - Indirect via extracting from a reflect.Value.Interface()
-//   - Reflect Package (reflect.Value.Call())
-//   - Beam's reflectx.Func, and reflectx.FuncNxM interfaces
-//   - Beam's default reflection based reflectx.Func shim
-//   - A Type assertion specialized reflectx.Func shim
+//   * Indirect via extracting from a reflect.Value.Interface()
+//   * Reflect Package (reflect.Value.Call())
+//   * Beam's reflectx.Func, and reflectx.FuncNxM interfaces
+//       * Beam's default reflection based reflectx.Func shim
+//       * A Type assertion specialized reflectx.Func shim
 //
 // The Implicit or Explicit method receiver difference exists because
 // Go's reflect package treats the two cases different, and there are
@@ -726,7 +726,7 @@ func (c *callerInt) Call1x1(a0 any) any {
 // Interface() method.
 func BenchmarkMethodCalls(b *testing.B) {
 	f := &Foo{A: 3}
-	var gi any
+	var gi interface{}
 	g := &Foo{A: 42}
 	gi = g
 	gV := reflect.ValueOf(g)
@@ -762,12 +762,12 @@ func BenchmarkMethodCalls(b *testing.B) {
 
 	// Parameters
 	var a int
-	var ai any = a
+	var ai interface{} = a
 	aV := reflect.ValueOf(a)
 	rvSlice := []reflect.Value{aV}
 	grvSlice := []reflect.Value{gV, aV}
-	efaceSlice := []any{a}
-	gEfaceSlice := []any{g, a}
+	efaceSlice := []interface{}{a}
+	gEfaceSlice := []interface{}{g, a}
 
 	tests := []struct {
 		name string
@@ -785,11 +785,11 @@ func BenchmarkMethodCalls(b *testing.B) {
 		{"ReflectCallImplicit-NoWrap", func() { a = impRF.Call([]reflect.Value{aV})[0].Interface().(int) }},
 		{"ReflectCallImplicit-NoReallocSlice", func() { a = impRF.Call(rvSlice)[0].Interface().(int) }},
 
-		{"ReflectXCallImplicit", func() { a = impRxF.Call([]any{a})[0].(int) }},
+		{"ReflectXCallImplicit", func() { a = impRxF.Call([]interface{}{a})[0].(int) }},
 		{"ReflectXCallImplicit-NoReallocSlice", func() { a = impRxF.Call(efaceSlice)[0].(int) }},
 		{"ReflectXCall1x1Implicit", func() { a = impRx1x1F.Call1x1(a).(int) }}, // Measures the default shimfunc overhead.
 
-		{"ShimedCallImplicit", func() { a = impRShimF.Call([]any{a})[0].(int) }},                  // What we're currently using for invoking methods
+		{"ShimedCallImplicit", func() { a = impRShimF.Call([]interface{}{a})[0].(int) }},          // What we're currently using for invoking methods
 		{"ShimedCallImplicit-NoReallocSlice", func() { a = impRShimF.Call(efaceSlice)[0].(int) }}, // Closer to what we're using now.
 		{"ShimedCall1x1Implicit", func() { a = impRShim1x1F.Call1x1(a).(int) }},
 
@@ -801,11 +801,11 @@ func BenchmarkMethodCalls(b *testing.B) {
 		{"ReflectCallExplicit-NoWrap", func() { a = expRF.Call([]reflect.Value{gV, aV})[0].Interface().(int) }},
 		{"ReflectCallExplicit-NoReallocSlice", func() { a = expRF.Call(grvSlice)[0].Interface().(int) }},
 
-		{"ReflectXCallExplicit", func() { a = expRxF.Call([]any{g, a})[0].(int) }},
+		{"ReflectXCallExplicit", func() { a = expRxF.Call([]interface{}{g, a})[0].(int) }},
 		{"ReflectXCallExplicit-NoReallocSlice", func() { a = expRxF.Call(gEfaceSlice)[0].(int) }},
 		{"ReflectXCall2x1Explicit", func() { a = expRx2c1F.Call2x1(g, a).(int) }},
 
-		{"ShimedCallExplicit", func() { a = expRShimF.Call([]any{g, a})[0].(int) }},
+		{"ShimedCallExplicit", func() { a = expRShimF.Call([]interface{}{g, a})[0].(int) }},
 		{"ShimedCallExplicit-NoReallocSlice", func() { a = expRShimF.Call(gEfaceSlice)[0].(int) }},
 		{"ShimedCall2x1Explicit", func() { a = expRShim2x1F.Call2x1(g, a).(int) }},
 
@@ -817,11 +817,11 @@ func BenchmarkMethodCalls(b *testing.B) {
 		{"ReflectCallClosured-NoWrap", func() { a = clsrRF.Call([]reflect.Value{aV})[0].Interface().(int) }},
 		{"ReflectCallClosured-NoReallocSlice", func() { a = clsrRF.Call(rvSlice)[0].Interface().(int) }},
 
-		{"ReflectXCallClosured", func() { a = clsrRxF.Call([]any{a})[0].(int) }},
+		{"ReflectXCallClosured", func() { a = clsrRxF.Call([]interface{}{a})[0].(int) }},
 		{"ReflectXCallClosured-NoReallocSlice", func() { a = clsrRxF.Call(efaceSlice)[0].(int) }},
 		{"ReflectXCall1x1Closured", func() { a = clsrRx1x1F.Call1x1(a).(int) }}, // Measures the default shimfunc overhead.
 
-		{"ShimedCallClosured", func() { a = clsrRShimF.Call([]any{a})[0].(int) }},                  // What we're currently using for invoking methods
+		{"ShimedCallClosured", func() { a = clsrRShimF.Call([]interface{}{a})[0].(int) }},          // What we're currently using for invoking methods
 		{"ShimedCallClosured-NoReallocSlice", func() { a = clsrRShimF.Call(efaceSlice)[0].(int) }}, // Closer to what we're using now.
 		{"ShimedCall1x1Closured", func() { a = clsrRShim1x1F.Call1x1(a).(int) }},
 	}

@@ -18,13 +18,15 @@ name: Mark and close stale pull requests
 on:
   schedule:
   - cron: '33 12 * * *'
-permissions: read-all
+
 jobs:
   stale:
-    runs-on: [self-hosted, ubuntu-20.04]
+
+    runs-on: ubuntu-latest
     permissions:
       issues: write
       pull-requests: write
+
     steps:
     - uses: actions/stale@v6
       with:
@@ -35,5 +37,4 @@ jobs:
         days-before-pr-stale: 60
         days-before-pr-close: 7
         days-before-issue-close: -1
-        days-before-issue-stale: -1
         exempt-pr-labels: "pinned,security"

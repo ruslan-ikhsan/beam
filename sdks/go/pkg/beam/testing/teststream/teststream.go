@@ -111,7 +111,7 @@ func (c *Config) AdvanceProcessingTimeToInfinity() {
 // Type mismatches on this or subsequent calls will cause AddElements to return an error.
 //
 // Element types must have built-in coders in Beam.
-func (c *Config) AddElements(timestamp int64, elements ...any) error {
+func (c *Config) AddElements(timestamp int64, elements ...interface{}) error {
 	t := reflect.TypeOf(elements[0])
 	if c.elmType == nil {
 		c.elmType = typex.New(t)
@@ -144,13 +144,13 @@ func (c *Config) AddElements(timestamp int64, elements ...any) error {
 // Calls into AddElements, which panics if an inserted type does not match a previously inserted element type.
 //
 // Element types must have built-in coders in Beam.
-func (c *Config) AddElementList(timestamp int64, elements any) error {
+func (c *Config) AddElementList(timestamp int64, elements interface{}) error {
 	val := reflect.ValueOf(elements)
 	if val.Kind() != reflect.Slice && val.Kind() != reflect.Array {
 		return fmt.Errorf("input %v must be a slice or array", elements)
 	}
 
-	var inputs []any
+	var inputs []interface{}
 	for i := 0; i < val.Len(); i++ {
 		inputs = append(inputs, val.Index(i).Interface())
 	}

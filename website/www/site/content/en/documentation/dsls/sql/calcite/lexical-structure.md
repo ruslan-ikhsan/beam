@@ -266,7 +266,7 @@ Case Sensitivity
 
 Beam SQL follows these rules for case sensitivity:
 
-<table class="table-wrapper--equal-p">
+<table>
 <thead>
 <tr>
 <th>Category</th>
@@ -336,7 +336,7 @@ language, and have the following characteristics:
 Beam SQL has the following reserved keywords.
 
 <div class="table-container-wrapper">
-<table style="width: 100%" class="table-wrapper--equal-p">
+<table style="table-layout: fixed; width: 110%">
 <tbody>
 <tr>
 <td>

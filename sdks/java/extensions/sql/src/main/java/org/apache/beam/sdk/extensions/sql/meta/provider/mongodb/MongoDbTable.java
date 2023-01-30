@@ -135,7 +135,7 @@ public class MongoDbTable extends SchemaBaseBeamTable implements Serializable {
       MongoDbFilter mongoFilter = (MongoDbFilter) filters;
       if (!mongoFilter.getSupported().isEmpty()) {
         Bson filter = constructPredicate(mongoFilter.getSupported());
-        LOG.info("Pushing down the following filter: {}", filter);
+        LOG.info("Pushing down the following filter: " + filter.toString());
         findQuery = findQuery.withFilters(filter);
       }
     }

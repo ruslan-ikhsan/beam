@@ -118,7 +118,8 @@ public class PrecombineGroupingTableTest {
             Caches.forMaximumBytes(2500L),
             StringUtf8Coder.of(),
             GlobalCombineFnRunners.create(COMBINE_FN),
-            new TestSizeEstimator(),
+            new StringPowerSizeEstimator(),
+            new IdentitySizeEstimator(),
             false);
 
     TestOutputReceiver<WindowedValue<KV<String, Long>>> receiver = new TestOutputReceiver<>();
@@ -144,7 +145,8 @@ public class PrecombineGroupingTableTest {
             Caches.forMaximumBytes(2500L),
             StringUtf8Coder.of(),
             GlobalCombineFnRunners.create(COMBINE_FN),
-            new TestSizeEstimator(),
+            new StringPowerSizeEstimator(),
+            new IdentitySizeEstimator(),
             false);
 
     TestOutputReceiver<WindowedValue<KV<String, Long>>> receiver = new TestOutputReceiver<>();
@@ -180,7 +182,8 @@ public class PrecombineGroupingTableTest {
             Caches.forMaximumBytes(2500L),
             StringUtf8Coder.of(),
             GlobalCombineFnRunners.create(COMBINE_FN),
-            new TestSizeEstimator(),
+            new StringPowerSizeEstimator(),
+            new IdentitySizeEstimator(),
             false);
 
     TestOutputReceiver<WindowedValue<KV<String, Long>>> receiver = new TestOutputReceiver<>();
@@ -218,7 +221,8 @@ public class PrecombineGroupingTableTest {
             Caches.forMaximumBytes(2500L),
             StringUtf8Coder.of(),
             GlobalCombineFnRunners.create(COMBINE_FN),
-            new TestSizeEstimator(),
+            new StringPowerSizeEstimator(),
+            new IdentitySizeEstimator(),
             false);
 
     TestOutputReceiver<WindowedValue<KV<String, Long>>> receiver = new TestOutputReceiver<>();
@@ -247,7 +251,8 @@ public class PrecombineGroupingTableTest {
             Caches.forMaximumBytes(2500L),
             StringUtf8Coder.of(),
             GlobalCombineFnRunners.create(COMBINE_FN),
-            new TestSizeEstimator(),
+            new StringPowerSizeEstimator(),
+            new IdentitySizeEstimator(),
             false);
 
     TestOutputReceiver<WindowedValue<KV<String, Long>>> receiver = new TestOutputReceiver<>();
@@ -297,7 +302,8 @@ public class PrecombineGroupingTableTest {
                         Caches.subCache(cache, currentI),
                         VarLongCoder.of(),
                         combineFnRunner,
-                        new TestSizeEstimator(),
+                        new IdentitySizeEstimator(),
+                        new IdentitySizeEstimator(),
                         false);
                 for (int j = 1; j <= 1000; ++j) {
                   table.put(
@@ -332,8 +338,9 @@ public class PrecombineGroupingTableTest {
 
   @Test
   public void testSampleFlatSizes() throws Exception {
-    TestSizeEstimator underlying = new TestSizeEstimator();
-    SizeEstimator estimator = new SamplingSizeEstimator(underlying, 0.05, 1.0, 10, new Random(1));
+    IdentitySizeEstimator underlying = new IdentitySizeEstimator();
+    SizeEstimator<Long> estimator =
+        new SamplingSizeEstimator<>(underlying, 0.05, 1.0, 10, new Random(1));
     // First 10 elements are always sampled.
     for (int k = 0; k < 10; k++) {
       assertEquals(100, estimator.estimateSize(100L));
@@ -354,8 +361,9 @@ public class PrecombineGroupingTableTest {
 
   @Test
   public void testSampleBoringSizes() throws Exception {
-    TestSizeEstimator underlying = new TestSizeEstimator();
-    SizeEstimator estimator = new SamplingSizeEstimator(underlying, 0.05, 1.0, 10, new Random(1));
+    IdentitySizeEstimator underlying = new IdentitySizeEstimator();
+    SizeEstimator<Long> estimator =
+        new SamplingSizeEstimator<>(underlying, 0.05, 1.0, 10, new Random(1));
     // First 10 elements are always sampled.
     for (int k = 0; k < 10; k += 2) {
       assertEquals(100, estimator.estimateSize(100L));
@@ -381,8 +389,9 @@ public class PrecombineGroupingTableTest {
   public void testSampleHighVarianceSizes() throws Exception {
     // The largest element is much larger than the average.
     List<Long> sizes = Arrays.asList(1L, 10L, 100L, 1000L);
-    TestSizeEstimator underlying = new TestSizeEstimator();
-    SizeEstimator estimator = new SamplingSizeEstimator(underlying, 0.1, 0.2, 10, new Random(1));
+    IdentitySizeEstimator underlying = new IdentitySizeEstimator();
+    SizeEstimator<Long> estimator =
+        new SamplingSizeEstimator<>(underlying, 0.1, 0.2, 10, new Random(1));
     // First 10 elements are always sampled.
     for (int k = 0; k < 10; k++) {
       long size = sizes.get(k % sizes.size());
@@ -421,8 +430,9 @@ public class PrecombineGroupingTableTest {
 
   @Test
   public void testSampleChangingSizes() throws Exception {
-    TestSizeEstimator underlying = new TestSizeEstimator();
-    SizeEstimator estimator = new SamplingSizeEstimator(underlying, 0.05, 1.0, 10, new Random(1));
+    IdentitySizeEstimator underlying = new IdentitySizeEstimator();
+    SizeEstimator<Long> estimator =
+        new SamplingSizeEstimator<>(underlying, 0.05, 1.0, 10, new Random(1));
     // First 10 elements are always sampled.
     for (int k = 0; k < 10; k++) {
       assertEquals(100, estimator.estimateSize(100L));
@@ -460,28 +470,22 @@ public class PrecombineGroupingTableTest {
     };
   }
 
-  /** "Estimate" the size of strings by taking the tenth power of their length. */
-  private static class TestSizeEstimator implements SizeEstimator {
+  /** "Estimate" the size of longs by looking at their value. */
+  private static class IdentitySizeEstimator implements SizeEstimator<Long> {
     int calls = 0;
 
     @Override
-    public long estimateSize(Object element) {
+    public long estimateSize(Long element) {
       calls++;
-      if (element instanceof PrecombineGroupingTable.GloballyWindowedTableGroupingKey) {
-        element =
-            ((PrecombineGroupingTable.GloballyWindowedTableGroupingKey) element).getStructuralKey();
-      } else if (element instanceof PrecombineGroupingTable.WindowedGroupingTableKey) {
-        element = ((PrecombineGroupingTable.WindowedGroupingTableKey) element).getStructuralKey();
-      } else if (element instanceof PrecombineGroupingTable.GroupingTableEntry) {
-        element = ((PrecombineGroupingTable.GroupingTableEntry) element).getAccumulator();
-      }
-      if (element instanceof String) {
-        return (long) Math.pow(10, ((String) element).length());
-      } else if (element instanceof Long) {
-        return (Long) element;
-      }
-      throw new IllegalArgumentException(
-          "Unknown type " + (element == null ? "null" : element.getClass().toString()));
+      return element;
+    }
+  }
+
+  /** "Estimate" the size of strings by taking the tenth power of their length. */
+  private static class StringPowerSizeEstimator implements SizeEstimator<String> {
+    @Override
+    public long estimateSize(String element) {
+      return (long) Math.pow(10, element.length());
     }
   }
 }

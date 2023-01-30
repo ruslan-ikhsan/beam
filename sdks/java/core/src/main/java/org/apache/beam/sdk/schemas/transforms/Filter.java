@@ -55,7 +55,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  *
  * <pre>{@code
  * PCollection<Location> locations = readLocations();
- * locations.apply(Filter.create()
+ * locations.apply(Filter
  *    .whereFieldName("latitude", lat -> lat < 40.720 && lat > 40.699)
  *    .whereFieldName("longitude", long -> long < -73.969 && long > -74.747));
  * }</pre>
@@ -75,7 +75,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  *
  * <pre>{@code
  * PCollection<UserAccount> users = readUsers();
- * users.apply(Filter.create()
+ * users.apply(Filter
  *    .whereFieldNames(Lists.newArrayList("spendOnBooks", "spendOnMovies"),
  *        row -> return row.getDouble("spendOnBooks") + row.getDouble("spendOnMovies") > 100.00));
  * }</pre>

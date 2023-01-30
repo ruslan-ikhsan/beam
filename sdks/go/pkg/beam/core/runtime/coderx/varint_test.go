@@ -23,7 +23,7 @@ import (
 )
 
 func TestVarIntZ(t *testing.T) {
-	tests := []any{
+	tests := []interface{}{
 		int(1),
 		int(-1),
 		int8(8),
@@ -56,7 +56,7 @@ func TestVarIntZ(t *testing.T) {
 }
 
 func TestVarUintZ(t *testing.T) {
-	tests := []any{
+	tests := []interface{}{
 		uint(1),
 		uint8(8),
 		uint16(16),

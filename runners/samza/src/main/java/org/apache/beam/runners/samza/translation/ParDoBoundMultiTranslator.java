@@ -72,7 +72,6 @@ import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.collect.Iterator
 import org.apache.samza.operators.MessageStream;
 import org.apache.samza.operators.functions.FlatMapFunction;
 import org.apache.samza.operators.functions.WatermarkFunction;
-import org.apache.samza.storage.kv.RocksDbKeyValueStorageEngineFactory;
 import org.joda.time.Instant;
 
 /**
@@ -162,13 +161,6 @@ class ParDoBoundMultiTranslator<InT, OutT>
     Map<String, PCollectionView<?>> sideInputMapping =
         ParDoTranslation.getSideInputMapping(ctx.getCurrentTransform());
 
-    final DoFnSignature signature = DoFnSignatures.getSignature(transform.getFn().getClass());
-    final Map<String, String> stateIdToStoreMapping = new HashMap<>();
-    for (String stateId : signature.stateDeclarations().keySet()) {
-      final String transformFullName = node.getEnclosingNode().getFullName();
-      final String storeId = ctx.getStoreIdGenerator().getId(stateId, transformFullName);
-      stateIdToStoreMapping.put(stateId, storeId);
-    }
     final DoFnOp<InT, OutT, RawUnionValue> op =
         new DoFnOp<>(
             transform.getMainOutputTag(),
@@ -190,8 +182,7 @@ class ParDoBoundMultiTranslator<InT, OutT>
             null,
             Collections.emptyMap(),
             doFnSchemaInformation,
-            sideInputMapping,
-            stateIdToStoreMapping);
+            sideInputMapping);
 
     final MessageStream<OpMessage<InT>> mergedStreams;
     if (sideInputStreams.isEmpty()) {
@@ -342,8 +333,7 @@ class ParDoBoundMultiTranslator<InT, OutT>
             ctx.getJobInfo(),
             idToTupleTagMap,
             doFnSchemaInformation,
-            sideInputMapping,
-            Collections.emptyMap());
+            sideInputMapping);
 
     final MessageStream<OpMessage<InT>> mergedStreams;
     if (sideInputStreams.isEmpty()) {
@@ -386,11 +376,18 @@ class ParDoBoundMultiTranslator<InT, OutT>
 
     if (signature.usesState()) {
       // set up user state configs
-      for (String stateId : signature.stateDeclarations().keySet()) {
-        final String transformFullName = node.getEnclosingNode().getFullName();
-        final String storeId = ctx.getStoreIdGenerator().getId(stateId, transformFullName);
+      for (DoFnSignature.StateDeclaration state : signature.stateDeclarations().values()) {
+        final String storeId = state.id();
+
+        // TODO: remove validation after we support same state id in different ParDo.
+        if (!ctx.addStateId(storeId)) {
+          throw new IllegalStateException(
+              "Duplicate StateId " + storeId + " found in multiple ParDo.");
+        }
+
         config.put(
-            "stores." + storeId + ".factory", RocksDbKeyValueStorageEngineFactory.class.getName());
+            "stores." + storeId + ".factory",
+            "org.apache.samza.storage.kv.RocksDbKeyValueStorageEngineFactory");
         config.put("stores." + storeId + ".key.serde", "byteArraySerde");
         config.put("stores." + storeId + ".msg.serde", "stateValueSerde");
         config.put("stores." + storeId + ".rocksdb.compression", "lz4");
@@ -433,7 +430,8 @@ class ParDoBoundMultiTranslator<InT, OutT>
       final String storeId = stateId.getLocalName();
 
       config.put(
-          "stores." + storeId + ".factory", RocksDbKeyValueStorageEngineFactory.class.getName());
+          "stores." + storeId + ".factory",
+          "org.apache.samza.storage.kv.RocksDbKeyValueStorageEngineFactory");
       config.put("stores." + storeId + ".key.serde", "byteArraySerde");
       config.put("stores." + storeId + ".msg.serde", "stateValueSerde");
       config.put("stores." + storeId + ".rocksdb.compression", "lz4");

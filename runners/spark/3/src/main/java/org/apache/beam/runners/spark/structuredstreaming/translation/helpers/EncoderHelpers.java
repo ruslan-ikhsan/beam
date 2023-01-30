@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import org.apache.beam.sdk.coders.Coder;
 import org.apache.beam.sdk.transforms.windowing.BoundedWindow;
@@ -108,7 +107,7 @@ public class EncoderHelpers {
           Double.class);
 
   // Default encoders by class
-  private static final Map<Class<?>, Encoder<?>> DEFAULT_ENCODERS = new ConcurrentHashMap<>();
+  private static final Map<Class<?>, Encoder<?>> DEFAULT_ENCODERS = new HashMap<>();
 
   // Factory for default encoders by class
   private static final Function<Class<?>, @Nullable Encoder<?>> ENCODER_FACTORY =

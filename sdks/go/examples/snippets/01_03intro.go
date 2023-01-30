@@ -50,7 +50,7 @@ func PipelineConstruction() {
 
 	// [END pipelines_constructing_reading]
 
-	_ = []any{pipeline, scope, lines}
+	_ = []interface{}{pipeline, scope, lines}
 }
 
 // Create demonstrates using beam.CreateList.
@@ -73,7 +73,7 @@ func Create() {
 	// to the pipeline.
 	linesPCol := beam.CreateList(s, lines)
 	// [END model_pcollection]
-	_ = []any{p, linesPCol}
+	_ = []interface{}{p, linesPCol}
 }
 
 // PipelineOptions shows basic pipeline options using flags.
@@ -86,7 +86,7 @@ func PipelineOptions() {
 	)
 	// [END pipeline_options_define_custom]
 
-	_ = []any{input, output}
+	_ = []interface{}{input, output}
 }
 
 // PipelineOptionsCustom shows slightly less basic pipeline options using flags.
@@ -98,5 +98,5 @@ func PipelineOptionsCustom() {
 	)
 	// [END pipeline_options_define_custom_with_help_and_default]
 
-	_ = []any{input, output}
+	_ = []interface{}{input, output}
 }

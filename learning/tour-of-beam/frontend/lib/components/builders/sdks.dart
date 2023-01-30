@@ -31,11 +31,11 @@ class SdksBuilder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sdkCache = GetIt.instance.get<SdkCache>();
+    final cache = GetIt.instance.get<SdkCache>();
 
     return AnimatedBuilder(
-      animation: sdkCache,
-      builder: (context, child) => builder(context, sdkCache.getSdks(), child),
+      animation: cache,
+      builder: (context, child) => builder(context, cache.getSdks(), child),
     );
   }
 }

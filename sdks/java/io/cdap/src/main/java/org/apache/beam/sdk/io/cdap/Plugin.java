@@ -18,7 +18,6 @@
 package org.apache.beam.sdk.io.cdap;
 
 import static org.apache.beam.sdk.util.Preconditions.checkStateNotNull;
-import static org.apache.beam.vendor.guava.v26_0_jre.com.google.common.base.Preconditions.checkState;
 
 import com.google.auto.value.AutoValue;
 import io.cdap.cdap.api.plugin.PluginConfig;
@@ -40,18 +39,15 @@ import org.apache.beam.sdk.io.cdap.context.BatchContextImpl;
 import org.apache.beam.sdk.io.cdap.context.BatchSinkContextImpl;
 import org.apache.beam.sdk.io.cdap.context.BatchSourceContextImpl;
 import org.apache.beam.sdk.io.cdap.context.StreamingSourceContextImpl;
-import org.apache.beam.sdk.io.sparkreceiver.ReceiverBuilder;
-import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.MRJobConfig;
-import org.apache.spark.streaming.receiver.Receiver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Class wrapper for a CDAP plugin. */
 @AutoValue
 @SuppressWarnings({"rawtypes", "unchecked"})
-public abstract class Plugin<K, V> {
+public abstract class Plugin {
 
   private static final Logger LOG = LoggerFactory.getLogger(Plugin.class);
   private static final String PREPARE_RUN_METHOD_NAME = "prepareRun";
@@ -73,24 +69,8 @@ public abstract class Plugin<K, V> {
   /** Gets InputFormatProvider or OutputFormatProvider class for a plugin. */
   public @Nullable abstract Class<?> getFormatProviderClass();
 
-  /** Gets Spark {@link Receiver} class for a CDAP plugin. */
-  public @Nullable abstract Class<? extends Receiver<V>> getReceiverClass();
-
-  /**
-   * Gets a {@link SerializableFunction} that defines how to get record offset for CDAP {@link
-   * Plugin} class.
-   */
-  public @Nullable abstract SerializableFunction<V, Long> getGetOffsetFn();
-
-  /**
-   * Gets a {@link SerializableFunction} that defines how to get constructor arguments for {@link
-   * Receiver} using {@link PluginConfig}.
-   */
-  public @Nullable abstract SerializableFunction<PluginConfig, Object[]>
-      getGetReceiverArgsFromConfigFn();
-
   /** Sets a plugin config. */
-  public Plugin<K, V> withConfig(PluginConfig pluginConfig) {
+  public Plugin withConfig(PluginConfig pluginConfig) {
     this.pluginConfig = pluginConfig;
     return this;
   }
@@ -118,7 +98,7 @@ public abstract class Plugin<K, V> {
       cdapPluginObj.prepareRun(getContext());
     } catch (Exception e) {
       LOG.error("Error while prepareRun", e);
-      throw new IllegalStateException("Error while prepareRun", e);
+      throw new IllegalStateException("Error while prepareRun");
     }
     if (getPluginType().equals(PluginConstants.PluginType.SOURCE)) {
       for (Map.Entry<String, String> entry :
@@ -149,7 +129,7 @@ public abstract class Plugin<K, V> {
   }
 
   /** Sets a plugin Hadoop configuration. */
-  public Plugin<K, V> withHadoopConfiguration(Class<K> formatKeyClass, Class<V> formatValueClass) {
+  public Plugin withHadoopConfiguration(Class<?> formatKeyClass, Class<?> formatValueClass) {
     Class<?> formatClass = getFormatClass();
     checkStateNotNull(formatClass, "Format class can't be null!");
     PluginConstants.Format formatType = getFormatType();
@@ -164,7 +144,7 @@ public abstract class Plugin<K, V> {
   }
 
   /** Sets a plugin Hadoop configuration. */
-  public Plugin<K, V> withHadoopConfiguration(Configuration hadoopConfiguration) {
+  public Plugin withHadoopConfiguration(Configuration hadoopConfiguration) {
     this.hadoopConfiguration = hadoopConfiguration;
     return this;
   }
@@ -207,7 +187,6 @@ public abstract class Plugin<K, V> {
     }
   }
 
-  /** Initializes {@link BatchContextImpl} for CDAP plugin. */
   public static BatchContextImpl initContext(Class<?> cdapPluginClass) {
     // Init context and determine input or output
     Class<?> contextClass;
@@ -247,36 +226,10 @@ public abstract class Plugin<K, V> {
     return isUnbounded;
   }
 
-  /** Gets a {@link ReceiverBuilder}. */
-  public ReceiverBuilder<V, ? extends Receiver<V>> getReceiverBuilder() {
-    checkState(isUnbounded(), "Receiver Builder is supported only for unbounded plugins");
-
-    Class<?> pluginClass = getPluginClass();
-    Class<? extends Receiver<V>> receiverClass = getReceiverClass();
-    SerializableFunction<PluginConfig, Object[]> getReceiverArgsFromConfigFn =
-        getGetReceiverArgsFromConfigFn();
-    PluginConfig pluginConfig = getPluginConfig();
-
-    checkStateNotNull(pluginConfig, "Plugin config can not be null!");
-    checkStateNotNull(pluginClass, "Plugin class can not be null!");
-    checkStateNotNull(receiverClass, "Receiver class can not be null!");
-    checkStateNotNull(
-        getReceiverArgsFromConfigFn, "Get receiver args from config function can not be null!");
-
-    return new ReceiverBuilder<>(receiverClass)
-        .withConstructorArgs(getReceiverArgsFromConfigFn.apply(pluginConfig));
-  }
-
-  /**
-   * Creates a batch plugin instance.
-   *
-   * @param newPluginClass class of the CDAP plugin {@link io.cdap.cdap.api.annotation.Plugin}.
-   * @param newFormatClass Hadoop Input or Output format class.
-   * @param newFormatProviderClass Hadoop Input or Output format provider class.
-   */
-  public static <K, V> Plugin<K, V> createBatch(
+  /** Creates a batch plugin instance. */
+  public static Plugin createBatch(
       Class<?> newPluginClass, Class<?> newFormatClass, Class<?> newFormatProviderClass) {
-    return Plugin.<K, V>builder()
+    return builder()
         .setPluginClass(newPluginClass)
         .setFormatClass(newFormatClass)
         .setFormatProviderClass(newFormatProviderClass)
@@ -285,73 +238,33 @@ public abstract class Plugin<K, V> {
         .build();
   }
 
-  /**
-   * Creates a streaming plugin instance.
-   *
-   * @param newPluginClass class of the CDAP plugin {@link io.cdap.cdap.api.plugin.Plugin}.
-   * @param getOffsetFn {@link SerializableFunction} that defines how to get record offset for CDAP
-   *     {@link io.cdap.cdap.api.annotation.Plugin} class.
-   * @param receiverClass Spark {@link Receiver} class for a CDAP plugin.
-   * @param getReceiverArgsFromConfigFn {@link SerializableFunction} that defines how to get
-   *     constructor arguments for {@link Receiver} using {@link PluginConfig}.
-   */
-  public static <K, V> Plugin<K, V> createStreaming(
-      Class<?> newPluginClass,
-      SerializableFunction<V, Long> getOffsetFn,
-      Class<? extends Receiver<V>> receiverClass,
-      SerializableFunction<PluginConfig, Object[]> getReceiverArgsFromConfigFn) {
-    return Plugin.<K, V>builder()
+  /** Creates a streaming plugin instance. */
+  public static Plugin createStreaming(Class<?> newPluginClass) {
+    return builder()
         .setPluginClass(newPluginClass)
         .setPluginType(Plugin.initPluginType(newPluginClass))
         .setContext(Plugin.initContext(newPluginClass))
-        .setGetOffsetFn(getOffsetFn)
-        .setReceiverClass(receiverClass)
-        .setGetReceiverArgsFromConfigFn(getReceiverArgsFromConfigFn)
         .build();
   }
 
-  /**
-   * Creates a streaming plugin instance with default function for getting args for {@link
-   * Receiver}.
-   *
-   * @param newPluginClass class of the CDAP plugin {@link io.cdap.cdap.api.plugin.Plugin}.
-   * @param getOffsetFn {@link SerializableFunction} that defines how to get record offset for CDAP
-   *     {@link io.cdap.cdap.api.annotation.Plugin} class.
-   * @param receiverClass Spark {@link Receiver} class for a CDAP plugin.
-   */
-  public static <K, V> Plugin<K, V> createStreaming(
-      Class<?> newPluginClass,
-      SerializableFunction<V, Long> getOffsetFn,
-      Class<? extends Receiver<V>> receiverClass) {
-    return createStreaming(
-        newPluginClass, getOffsetFn, receiverClass, config -> new Object[] {config});
-  }
-
   /** Creates a plugin builder instance. */
-  public static <K, V> Builder<K, V> builder() {
-    return new AutoValue_Plugin.Builder<>();
+  public static Builder builder() {
+    return new AutoValue_Plugin.Builder();
   }
 
   /** Builder class for a {@link Plugin}. */
   @AutoValue.Builder
-  public abstract static class Builder<K, V> {
-    public abstract Builder<K, V> setPluginClass(Class<?> newPluginClass);
+  public abstract static class Builder {
+    public abstract Builder setPluginClass(Class<?> newPluginClass);
 
-    public abstract Builder<K, V> setFormatClass(Class<?> newFormatClass);
+    public abstract Builder setFormatClass(Class<?> newFormatClass);
 
-    public abstract Builder<K, V> setFormatProviderClass(Class<?> newFormatProviderClass);
+    public abstract Builder setFormatProviderClass(Class<?> newFormatProviderClass);
 
-    public abstract Builder<K, V> setGetOffsetFn(SerializableFunction<V, Long> getOffsetFn);
+    public abstract Builder setPluginType(PluginConstants.PluginType newPluginType);
 
-    public abstract Builder<K, V> setGetReceiverArgsFromConfigFn(
-        SerializableFunction<PluginConfig, Object[]> getReceiverArgsFromConfigFn);
+    public abstract Builder setContext(BatchContextImpl context);
 
-    public abstract Builder<K, V> setReceiverClass(Class<? extends Receiver<V>> receiverClass);
-
-    public abstract Builder<K, V> setPluginType(PluginConstants.PluginType newPluginType);
-
-    public abstract Builder<K, V> setContext(BatchContextImpl context);
-
-    public abstract Plugin<K, V> build();
+    public abstract Plugin build();
   }
 }

@@ -172,7 +172,7 @@ public class QueryChangeStreamAction {
       while (resultSet.next()) {
         final List<ChangeStreamRecord> records =
             changeStreamRecordMapper.toChangeStreamRecords(
-                updatedPartition, resultSet, resultSet.getMetadata());
+                updatedPartition, resultSet.getCurrentRowAsStruct(), resultSet.getMetadata());
 
         Optional<ProcessContinuation> maybeContinuation;
         for (final ChangeStreamRecord record : records) {

@@ -21,7 +21,6 @@ import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.verify;
 
 import java.util.Map;
-import java.util.UUID;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
@@ -53,7 +52,7 @@ public class RampupThrottlingFnTest {
         verify(mockCounter).inc(millis);
         throw new RampupDelayException();
       };
-  private DoFnTester<String, String> rampupThrottlingFnTester;
+  private DoFnTester<Void, Void> rampupThrottlingFnTester;
 
   @Before
   public void setUp() throws Exception {
@@ -63,8 +62,8 @@ public class RampupThrottlingFnTest {
     TestPipeline pipeline = TestPipeline.create();
     PCollectionView<Instant> startTimeView =
         pipeline.apply(Create.of(Instant.now())).apply(View.asSingleton());
-    RampupThrottlingFn<String> rampupThrottlingFn =
-        new RampupThrottlingFn<String>(1, startTimeView) {
+    RampupThrottlingFn<Void> rampupThrottlingFn =
+        new RampupThrottlingFn<Void>(1, startTimeView) {
           @Override
           @Setup
           public void setup() {
@@ -102,7 +101,7 @@ public class RampupThrottlingFnTest {
     for (Map.Entry<Duration, Integer> entry : rampupSchedule.entrySet()) {
       DateTimeUtils.setCurrentMillisFixed(entry.getKey().getMillis());
       for (int i = 0; i < entry.getValue(); i++) {
-        rampupThrottlingFnTester.processElement(UUID.randomUUID().toString());
+        rampupThrottlingFnTester.processElement(null);
       }
       assertThrows(RampupDelayException.class, () -> rampupThrottlingFnTester.processElement(null));
     }

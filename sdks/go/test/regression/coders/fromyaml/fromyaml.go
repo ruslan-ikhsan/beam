@@ -65,8 +65,8 @@ type Coder struct {
 }
 
 type logger interface {
-	Errorf(string, ...any)
-	Logf(string, ...any)
+	Errorf(string, ...interface{})
+	Logf(string, ...interface{})
 }
 
 // Spec is a set of conditions that a coder must pass.
@@ -180,7 +180,7 @@ var cmpOpts = []cmp.Option{
 }
 
 func diff(c Coder, elem *exec.FullValue, eg yaml.MapItem) bool {
-	var got, want any
+	var got, want interface{}
 	switch c.Urn {
 	case "beam:coder:bytes:v1":
 		got = string(elem.Elm.([]byte))
@@ -254,7 +254,7 @@ func diff(c Coder, elem *exec.FullValue, eg yaml.MapItem) bool {
 	case "beam:coder:interval_window:v1":
 		var a, b int
 		val := eg.Value
-		if is, ok := eg.Value.([]any); ok {
+		if is, ok := eg.Value.([]interface{}); ok {
 			val = is[0]
 		}
 		v := val.(yaml.MapSlice)
@@ -340,7 +340,7 @@ func diff(c Coder, elem *exec.FullValue, eg yaml.MapItem) bool {
 					pass = false
 				}
 			case "windows":
-				if v, ok := item.Value.([]any); ok {
+				if v, ok := item.Value.([]interface{}); ok {
 					for i, val := range v {
 						if val.(string) == "global" && fmt.Sprintf("%s", tm.Windows[i]) == "[*]" {
 							continue
@@ -376,7 +376,7 @@ func diff(c Coder, elem *exec.FullValue, eg yaml.MapItem) bool {
 	return true
 }
 
-func diffPane(eg any, got typex.PaneInfo) bool {
+func diffPane(eg interface{}, got typex.PaneInfo) bool {
 	pass := true
 	paneTiming := map[typex.PaneTiming]string{
 		typex.PaneUnknown: "UNKNOWN",
@@ -423,7 +423,7 @@ var nameToType = map[string]reflect.Type{
 	"f_float": reflectx.Float32,
 }
 
-func setField(rv reflect.Value, i int, v any) {
+func setField(rv reflect.Value, i int, v interface{}) {
 	if v == nil {
 		return
 	}
@@ -455,9 +455,9 @@ func setField(rv reflect.Value, i int, v any) {
 			rf.Set(reflect.ValueOf([]byte(v.(string))))
 			break
 		}
-		// Value is a []any with string values.
+		// Value is a []interface{} with string values.
 		var arr []string
-		for _, a := range v.([]any) {
+		for _, a := range v.([]interface{}) {
 			arr = append(arr, a.(string))
 		}
 		rf.Set(reflect.ValueOf(arr))
@@ -499,11 +499,11 @@ func (s *Spec) parseCoder(c Coder) string {
 // Simple logger to run as main program.
 type logLogger struct{}
 
-func (*logLogger) Errorf(format string, v ...any) {
+func (*logLogger) Errorf(format string, v ...interface{}) {
 	log.Printf(format, v...)
 }
 
-func (*logLogger) Logf(format string, v ...any) {
+func (*logLogger) Logf(format string, v ...interface{}) {
 	log.Printf(format, v...)
 }
 

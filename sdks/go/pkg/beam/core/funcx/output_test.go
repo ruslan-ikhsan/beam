@@ -24,7 +24,7 @@ import (
 
 func TestIsEmit(t *testing.T) {
 	tests := []struct {
-		Fn  any
+		Fn  interface{}
 		Exp bool
 	}{
 		{func() {}, false}, // no values

@@ -27,7 +27,7 @@ func TestRegistry(t *testing.T) {
 	var handler = func(context.Context, *HandlerParams) (*jobpb.ExpansionResponse, error) {
 		return nil, nil
 	}
-	toPtr := func(fn any) uintptr {
+	toPtr := func(fn interface{}) uintptr {
 		return reflect.ValueOf(handler).Pointer()
 	}
 

@@ -26,8 +26,6 @@ import static java.sql.JDBCType.NCHAR;
 import static java.sql.JDBCType.NVARCHAR;
 import static java.sql.JDBCType.VARBINARY;
 import static java.sql.JDBCType.VARCHAR;
-import static org.apache.beam.sdk.util.Preconditions.checkArgumentNotNull;
-import static org.apache.beam.sdk.util.Preconditions.checkStateNotNull;
 import static org.apache.beam.vendor.guava.v26_0_jre.com.google.common.base.Preconditions.checkArgument;
 
 import java.io.Serializable;
@@ -60,13 +58,15 @@ import org.apache.beam.sdk.schemas.logicaltypes.VariableBytes;
 import org.apache.beam.sdk.schemas.logicaltypes.VariableString;
 import org.apache.beam.sdk.values.Row;
 import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.collect.ImmutableMap;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.chrono.ISOChronology;
 
 /** Provides utility functions for working with Beam {@link Schema} types. */
 @Experimental(Kind.SCHEMAS)
+@SuppressWarnings({
+  "nullness" // TODO(https://github.com/apache/beam/issues/20497)
+})
 class SchemaUtil {
   /**
    * Interface implemented by functions that extract values of different types from a JDBC
@@ -74,7 +74,6 @@ class SchemaUtil {
    */
   @FunctionalInterface
   interface ResultSetFieldExtractor extends Serializable {
-    @Nullable
     Object extract(ResultSet rs, Integer index) throws SQLException;
   }
   // ResultSetExtractors for primitive schema types (excluding arrays, structs and logical types).
@@ -254,13 +253,13 @@ class SchemaUtil {
     switch (typeName) {
       case ARRAY:
       case ITERABLE:
-        Schema.FieldType elementType = checkArgumentNotNull(fieldType.getCollectionElementType());
+        Schema.FieldType elementType = fieldType.getCollectionElementType();
         ResultSetFieldExtractor elementExtractor = createFieldExtractor(elementType);
         return createArrayExtractor(elementExtractor);
       case DATETIME:
         return TIMESTAMP_EXTRACTOR;
       case LOGICAL_TYPE:
-        return createLogicalTypeExtractor(checkArgumentNotNull(fieldType.getLogicalType()));
+        return createLogicalTypeExtractor(fieldType.getLogicalType());
       default:
         if (!RESULTSET_FIELD_EXTRACTORS.containsKey(typeName)) {
           throw new UnsupportedOperationException(
@@ -279,8 +278,8 @@ class SchemaUtil {
         return null;
       }
 
-      List<@Nullable Object> arrayElements = new ArrayList<>();
-      ResultSet arrayRs = checkArgumentNotNull(arrayVal.getResultSet());
+      List<Object> arrayElements = new ArrayList<>();
+      ResultSet arrayRs = arrayVal.getResultSet();
       while (arrayRs.next()) {
         arrayElements.add(elementExtractor.extract(arrayRs, 1));
       }
@@ -303,10 +302,7 @@ class SchemaUtil {
       return TIMESTAMP_EXTRACTOR;
     } else {
       ResultSetFieldExtractor extractor = createFieldExtractor(fieldType.getBaseType());
-      return (rs, index) -> {
-        BaseT v = checkStateNotNull((BaseT) extractor.extract(rs, index));
-        return fieldType.toInputType(v);
-      };
+      return (rs, index) -> fieldType.toInputType((BaseT) extractor.extract(rs, index));
     }
   }
 
@@ -414,7 +410,7 @@ class SchemaUtil {
   }
 
   /**
-   * Compares two FieldType. Modified from FieldType.equals to ignore nullability.
+   * compares two FieldType. Does not compare nullability.
    *
    * @param a FieldType 1
    * @param b FieldType 2
@@ -422,19 +418,13 @@ class SchemaUtil {
    */
   static boolean compareSchemaFieldType(Schema.FieldType a, Schema.FieldType b) {
     if (a.getTypeName().equals(b.getTypeName())) {
-      if (!a.getTypeName().isLogicalType()) {
-        return true;
-      } else {
-        Schema.LogicalType<?, ?> aLogicalType = checkArgumentNotNull(a.getLogicalType());
-        Schema.LogicalType<?, ?> bLogicalType = checkArgumentNotNull(b.getLogicalType());
-        return compareSchemaFieldType(aLogicalType.getBaseType(), bLogicalType.getBaseType());
-      }
+      return !a.getTypeName().equals(Schema.TypeName.LOGICAL_TYPE)
+          || compareSchemaFieldType(
+              a.getLogicalType().getBaseType(), b.getLogicalType().getBaseType());
     } else if (a.getTypeName().isLogicalType()) {
-      Schema.LogicalType<?, ?> aLogicalType = checkArgumentNotNull(a.getLogicalType());
-      return aLogicalType.getBaseType().getTypeName().equals(b.getTypeName());
+      return a.getLogicalType().getBaseType().getTypeName().equals(b.getTypeName());
     } else if (b.getTypeName().isLogicalType()) {
-      Schema.LogicalType<?, ?> bLogicalType = checkArgumentNotNull(b.getLogicalType());
-      return bLogicalType.getBaseType().getTypeName().equals(a.getTypeName());
+      return b.getLogicalType().getBaseType().getTypeName().equals(a.getTypeName());
     }
     return false;
   }

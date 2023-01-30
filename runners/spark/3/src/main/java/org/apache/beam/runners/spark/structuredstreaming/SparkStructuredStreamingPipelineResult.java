@@ -18,7 +18,6 @@
 package org.apache.beam.runners.spark.structuredstreaming;
 
 import static org.apache.beam.runners.core.metrics.MetricsContainerStepMap.asAttemptedOnlyMetricResults;
-import static org.sparkproject.guava.base.Objects.firstNonNull;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
@@ -34,19 +33,21 @@ import org.apache.beam.sdk.util.UserCodeException;
 import org.apache.spark.SparkException;
 import org.joda.time.Duration;
 
+/** Represents a Spark pipeline execution result. */
+@SuppressWarnings({
+  "rawtypes", // TODO(https://github.com/apache/beam/issues/20447)
+  "nullness" // TODO(https://github.com/apache/beam/issues/20497)
+})
 public class SparkStructuredStreamingPipelineResult implements PipelineResult {
 
-  private final Future<?> pipelineExecution;
-  private final MetricsAccumulator metrics;
-  private @Nullable final Runnable onTerminalState;
-  private PipelineResult.State state;
+  final Future pipelineExecution;
+  @Nullable final Runnable onTerminalState;
+
+  PipelineResult.State state;
 
   SparkStructuredStreamingPipelineResult(
-      Future<?> pipelineExecution,
-      MetricsAccumulator metrics,
-      @Nullable final Runnable onTerminalState) {
+      final Future<?> pipelineExecution, @Nullable final Runnable onTerminalState) {
     this.pipelineExecution = pipelineExecution;
-    this.metrics = metrics;
     this.onTerminalState = onTerminalState;
     // pipelineExecution is expected to have started executing eagerly.
     this.state = State.RUNNING;
@@ -56,19 +57,21 @@ public class SparkStructuredStreamingPipelineResult implements PipelineResult {
     return (e instanceof RuntimeException) ? (RuntimeException) e : new RuntimeException(e);
   }
 
-  /**
-   * Unwrap cause of SparkException or UserCodeException as PipelineExecutionException. Otherwise,
-   * return {@code exception} as RuntimeException.
-   */
-  private static RuntimeException unwrapCause(Throwable exception) {
-    Throwable next = exception;
-    while (next != null && (next instanceof SparkException || next instanceof UserCodeException)) {
-      exception = next;
-      next = next.getCause();
+  private static RuntimeException beamExceptionFrom(final Throwable e) {
+    // Scala doesn't declare checked exceptions in the bytecode, and the Java compiler
+    // won't let you catch something that is not declared, so we can't catch
+    // SparkException directly, instead we do an instanceof check.
+
+    if (e instanceof SparkException) {
+      if (e.getCause() != null && e.getCause() instanceof UserCodeException) {
+        UserCodeException userException = (UserCodeException) e.getCause();
+        return new Pipeline.PipelineExecutionException(userException.getCause());
+      } else if (e.getCause() != null) {
+        return new Pipeline.PipelineExecutionException(e.getCause());
+      }
     }
-    return exception == next
-        ? runtimeExceptionFrom(exception)
-        : new Pipeline.PipelineExecutionException(firstNonNull(next, exception));
+
+    return runtimeExceptionFrom(e);
   }
 
   private State awaitTermination(Duration duration)
@@ -93,14 +96,15 @@ public class SparkStructuredStreamingPipelineResult implements PipelineResult {
     try {
       State finishState = awaitTermination(duration);
       offerNewState(finishState);
+
     } catch (final TimeoutException e) {
       // ignore.
     } catch (final ExecutionException e) {
       offerNewState(PipelineResult.State.FAILED);
-      throw unwrapCause(firstNonNull(e.getCause(), e));
+      throw beamExceptionFrom(e.getCause());
     } catch (final Exception e) {
       offerNewState(PipelineResult.State.FAILED);
-      throw unwrapCause(e);
+      throw beamExceptionFrom(e);
     }
 
     return state;
@@ -108,7 +112,7 @@ public class SparkStructuredStreamingPipelineResult implements PipelineResult {
 
   @Override
   public MetricResults metrics() {
-    return asAttemptedOnlyMetricResults(metrics.value());
+    return asAttemptedOnlyMetricResults(MetricsAccumulator.getInstance().value());
   }
 
   @Override
@@ -124,7 +128,7 @@ public class SparkStructuredStreamingPipelineResult implements PipelineResult {
       try {
         onTerminalState.run();
       } catch (Exception e) {
-        throw unwrapCause(e);
+        throw beamExceptionFrom(e);
       }
     }
   }

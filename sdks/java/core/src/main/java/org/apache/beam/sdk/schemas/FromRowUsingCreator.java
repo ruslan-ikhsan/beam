@@ -148,9 +148,7 @@ class FromRowUsingCreator<T> implements SerializableFunction<Row, T> {
                 typeFactory);
         return (ValueT) oneOfType.createValue(oneOfValue.getCaseType(), fromValue);
       } else if (type.getTypeName().isLogicalType()) {
-        Schema.LogicalType<ValueT, ValueT> logicalType =
-            (Schema.LogicalType<ValueT, ValueT>) type.getLogicalType();
-        return logicalType.toBaseType(value);
+        return (ValueT) type.getLogicalType().toBaseType(value);
       }
       return value;
     }

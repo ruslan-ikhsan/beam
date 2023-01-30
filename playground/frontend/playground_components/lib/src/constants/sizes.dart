@@ -23,7 +23,6 @@ class BeamSizes {
   static const double size3 = 3;
   static const double size4 = 4;
   static const double size6 = 6;
-  static const double size7 = 7;
   static const double size8 = 8;
   static const double size10 = 10;
   static const double size12 = 12;
@@ -42,7 +41,6 @@ class BeamSizes {
   static const double headerButtonHeight = 46;
   static const double loadingIndicator = 40;
   static const double splitViewSeparator = BeamSizes.size8;
-  static const double tabBarHeight = 50;
 }
 
 class BeamBorderRadius {

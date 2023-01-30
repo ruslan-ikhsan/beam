@@ -25,13 +25,15 @@ import org.apache.spark.metrics.source.Source;
  * underlying {@link org.apache.beam.sdk.metrics.MetricResults} instance.
  */
 public class SparkBeamMetricSource implements Source {
+  private static final String METRIC_NAME = "Metrics";
+
   private final String name;
 
   private final MetricRegistry metricRegistry = new MetricRegistry();
 
-  public SparkBeamMetricSource(String name, MetricsAccumulator metrics) {
+  public SparkBeamMetricSource(final String name) {
     this.name = name;
-    metricRegistry.register(name, new SparkBeamMetric(metrics));
+    metricRegistry.register(METRIC_NAME, new SparkBeamMetric());
   }
 
   @Override

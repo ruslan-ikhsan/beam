@@ -20,25 +20,23 @@ package org.apache.beam.sdk.fn.data;
 import static org.apache.beam.sdk.util.WindowedValue.valueInGlobalWindow;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThrows;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import org.apache.beam.model.fnexecution.v1.BeamFnApi;
+import java.util.concurrent.ExecutionException;
 import org.apache.beam.sdk.coders.Coder;
 import org.apache.beam.sdk.coders.StringUtf8Coder;
-import org.apache.beam.sdk.fn.test.TestExecutors;
-import org.apache.beam.sdk.fn.test.TestExecutors.TestExecutorService;
 import org.apache.beam.sdk.transforms.windowing.GlobalWindow;
 import org.apache.beam.sdk.util.ByteStringOutputStream;
 import org.apache.beam.sdk.util.WindowedValue;
+import org.apache.beam.vendor.grpc.v1p48p1.com.google.protobuf.ByteString;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
@@ -47,201 +45,64 @@ import org.junit.runners.JUnit4;
 public class BeamFnDataInboundObserverTest {
   private static final Coder<WindowedValue<String>> CODER =
       WindowedValue.getFullCoder(StringUtf8Coder.of(), GlobalWindow.Coder.INSTANCE);
-  private static final String TRANSFORM_ID = "transformId";
-  private static final String TIMER_FAMILY_ID = "timerFamilyId";
+  private static final LogicalEndpoint DATA_ENDPOINT = LogicalEndpoint.data("777L", "999L");
 
-  @Rule
-  public final TestExecutorService executor = TestExecutors.from(Executors::newCachedThreadPool);
+  @Rule public ExpectedException thrown = ExpectedException.none();
 
   @Test
-  public void testConsumptionOfValuesHappensOnAwaitCompletionCallersThread() throws Exception {
-    Thread thread = Thread.currentThread();
+  public void testDecodingElements() throws Exception {
     Collection<WindowedValue<String>> values = new ArrayList<>();
-    Collection<WindowedValue<String>> timers = new ArrayList<>();
+    InboundDataClient readFuture = CompletableFutureInboundDataClient.create();
     BeamFnDataInboundObserver observer =
-        BeamFnDataInboundObserver.forConsumers(
-            Arrays.asList(
-                DataEndpoint.create(
-                    TRANSFORM_ID,
-                    CODER,
-                    (value) -> {
-                      assertSame(thread, Thread.currentThread());
-                      values.add(value);
-                    })),
-            Arrays.asList(
-                TimerEndpoint.create(
-                    TRANSFORM_ID,
-                    TIMER_FAMILY_ID,
-                    CODER,
-                    (value) -> {
-                      assertSame(thread, Thread.currentThread());
-                      timers.add(value);
-                    })));
+        new BeamFnDataInboundObserver(
+            DATA_ENDPOINT, DecodingFnDataReceiver.create(CODER, values::add), readFuture);
 
-    Future<?> future =
-        executor.submit(
-            () -> {
-              // Test decoding multiple messages
-              observer.accept(dataWith("ABC", "DEF", "GHI"));
-              observer.accept(lastData());
-              observer.accept(timerWith("UVW"));
-              observer.accept(timerWith("XYZ"));
-              observer.accept(lastTimer());
-              return null;
-            });
-
-    observer.awaitCompletion();
+    // Test decoding multiple messages
+    observer.accept(dataWith("ABC", "DEF", "GHI"), false);
     assertThat(
         values,
         contains(
             valueInGlobalWindow("ABC"), valueInGlobalWindow("DEF"), valueInGlobalWindow("GHI")));
-    assertThat(timers, contains(valueInGlobalWindow("UVW"), valueInGlobalWindow("XYZ")));
-    future.get();
+    values.clear();
+
+    // Test empty message signaling end of stream
+    assertFalse(readFuture.isDone());
+    observer.accept(ByteString.EMPTY, true);
+    assertTrue(readFuture.isDone());
+
+    // Test messages after stream is finished are discarded
+    observer.accept(dataWith("ABC", "DEF", "GHI"), false);
+    assertThat(values, empty());
   }
 
   @Test
-  public void testAwaitCompletionFailureVisibleToAwaitCompletionCallerAndProducer()
-      throws Exception {
+  public void testConsumptionFailureCompletesReadFutureAndDiscardsMessages() throws Exception {
+    InboundDataClient readClient = CompletableFutureInboundDataClient.create();
     BeamFnDataInboundObserver observer =
-        BeamFnDataInboundObserver.forConsumers(
-            Arrays.asList(
-                DataEndpoint.create(
-                    TRANSFORM_ID,
-                    CODER,
-                    (value) -> {
-                      throw new Exception("test consumer failed");
-                    })),
-            Collections.emptyList());
+        new BeamFnDataInboundObserver(
+            DATA_ENDPOINT, DecodingFnDataReceiver.create(CODER, this::throwOnDefValue), readClient);
 
-    Future<?> future =
-        executor.submit(
-            () -> {
-              observer.accept(dataWith("ABC"));
-              assertThrows(
-                  "test consumer failed",
-                  Exception.class,
-                  () -> {
-                    while (true) {
-                      // keep trying to send messages since the queue buffers messages and the
-                      // consumer
-                      // may have not yet noticed the bad state.
-                      observer.accept(dataWith("ABC"));
-                    }
-                  });
-              return null;
-            });
+    assertFalse(readClient.isDone());
+    observer.accept(dataWith("ABC", "DEF", "GHI"), false);
+    assertTrue(readClient.isDone());
 
-    assertThrows("test consumer failed", Exception.class, () -> observer.awaitCompletion());
-    future.get();
+    thrown.expect(ExecutionException.class);
+    thrown.expectCause(instanceOf(RuntimeException.class));
+    thrown.expectMessage("Failure");
+    readClient.awaitCompletion();
   }
 
-  @Test
-  public void testCloseVisibleToAwaitCompletionCallerAndProducer() throws Exception {
-    BeamFnDataInboundObserver observer =
-        BeamFnDataInboundObserver.forConsumers(
-            Arrays.asList(DataEndpoint.create(TRANSFORM_ID, CODER, (value) -> {})),
-            Collections.emptyList());
-
-    Future<?> future =
-        executor.submit(
-            () -> {
-              observer.accept(dataWith("ABC"));
-              assertThrows(
-                  BeamFnDataInboundObserver.CloseException.class,
-                  () -> {
-                    while (true) {
-                      // keep trying to send messages since the queue buffers messages and the
-                      // consumer
-                      // may have not yet noticed the bad state.
-                      observer.accept(dataWith("ABC"));
-                    }
-                  });
-              return null;
-            });
-    Future<?> future2 =
-        executor.submit(
-            () -> {
-              observer.close();
-              return null;
-            });
-
-    assertThrows(BeamFnDataInboundObserver.CloseException.class, () -> observer.awaitCompletion());
-    future.get();
-    future2.get();
+  private void throwOnDefValue(WindowedValue<String> value) {
+    if ("DEF".equals(value.getValue())) {
+      throw new RuntimeException("Failure");
+    }
   }
 
-  @Test
-  public void testBadProducerDataFailureVisibleToAwaitCompletionCallerAndProducer()
-      throws Exception {
-    BeamFnDataInboundObserver observer =
-        BeamFnDataInboundObserver.forConsumers(
-            Arrays.asList(DataEndpoint.create(TRANSFORM_ID, CODER, (value) -> {})),
-            Collections.emptyList());
-    Future<?> future =
-        executor.submit(
-            () -> {
-              observer.accept(timerWith("DEF"));
-              assertThrows(
-                  "Unable to find inbound timer receiver for instruction",
-                  IllegalStateException.class,
-                  () -> {
-                    // keep trying to send messages since the queue buffers messages and the
-                    // consumer
-                    // may have not yet noticed the bad state.
-                    while (true) {
-                      observer.accept(dataWith("ABC"));
-                    }
-                  });
-              return null;
-            });
-
-    assertThrows(
-        "Unable to find inbound timer receiver for instruction",
-        IllegalStateException.class,
-        () -> observer.awaitCompletion());
-    future.get();
-  }
-
-  private BeamFnApi.Elements dataWith(String... values) throws Exception {
+  private ByteString dataWith(String... values) throws Exception {
     ByteStringOutputStream output = new ByteStringOutputStream();
     for (String value : values) {
       CODER.encode(valueInGlobalWindow(value), output);
     }
-    return BeamFnApi.Elements.newBuilder()
-        .addData(
-            BeamFnApi.Elements.Data.newBuilder()
-                .setTransformId(TRANSFORM_ID)
-                .setData(output.toByteString()))
-        .build();
-  }
-
-  private BeamFnApi.Elements lastData() throws Exception {
-    return BeamFnApi.Elements.newBuilder()
-        .addData(BeamFnApi.Elements.Data.newBuilder().setTransformId(TRANSFORM_ID).setIsLast(true))
-        .build();
-  }
-
-  private BeamFnApi.Elements timerWith(String... values) throws Exception {
-    ByteStringOutputStream output = new ByteStringOutputStream();
-    for (String value : values) {
-      CODER.encode(valueInGlobalWindow(value), output);
-    }
-    return BeamFnApi.Elements.newBuilder()
-        .addTimers(
-            BeamFnApi.Elements.Timers.newBuilder()
-                .setTransformId(TRANSFORM_ID)
-                .setTimerFamilyId(TIMER_FAMILY_ID)
-                .setTimers(output.toByteString()))
-        .build();
-  }
-
-  private BeamFnApi.Elements lastTimer() throws Exception {
-    return BeamFnApi.Elements.newBuilder()
-        .addTimers(
-            BeamFnApi.Elements.Timers.newBuilder()
-                .setTransformId(TRANSFORM_ID)
-                .setTimerFamilyId(TIMER_FAMILY_ID)
-                .setIsLast(true))
-        .build();
+    return output.toByteString();
   }
 }

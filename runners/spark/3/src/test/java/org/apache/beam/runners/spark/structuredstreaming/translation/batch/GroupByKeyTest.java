@@ -29,7 +29,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import org.apache.beam.runners.spark.structuredstreaming.SparkSessionRule;
+import org.apache.beam.runners.spark.structuredstreaming.SparkStructuredStreamingPipelineOptions;
+import org.apache.beam.runners.spark.structuredstreaming.SparkStructuredStreamingRunner;
+import org.apache.beam.sdk.options.PipelineOptions;
+import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.SerializableMatcher;
 import org.apache.beam.sdk.testing.TestPipeline;
@@ -48,7 +51,6 @@ import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.collect.Immutabl
 import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.collect.Lists;
 import org.joda.time.Duration;
 import org.joda.time.Instant;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -57,11 +59,15 @@ import org.junit.runners.JUnit4;
 /** Test class for beam to spark {@link ParDo} translation. */
 @RunWith(JUnit4.class)
 public class GroupByKeyTest implements Serializable {
-  @ClassRule public static final SparkSessionRule SESSION = new SparkSessionRule();
+  @Rule public transient TestPipeline pipeline = TestPipeline.fromOptions(testOptions());
 
-  @Rule
-  public transient TestPipeline pipeline =
-      TestPipeline.fromOptions(SESSION.createPipelineOptions());
+  private static PipelineOptions testOptions() {
+    SparkStructuredStreamingPipelineOptions options =
+        PipelineOptionsFactory.create().as(SparkStructuredStreamingPipelineOptions.class);
+    options.setRunner(SparkStructuredStreamingRunner.class);
+    options.setTestMode(true);
+    return options;
+  }
 
   @Test
   public void testGroupByKeyPreservesWindowing() {

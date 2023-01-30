@@ -35,7 +35,6 @@ from apache_beam.io.filesystemio import Uploader
 from apache_beam.io.filesystemio import UploaderStream
 from apache_beam.options.pipeline_options import AzureOptions
 from apache_beam.utils import retry
-from apache_beam.utils.annotations import deprecated
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -376,7 +375,7 @@ class BlobStorageIO(object):
       path: Azure Blob Storage file path pattern in the form
             azfs://<storage-account>/<container>/[name].
     """
-    return self._blob_properties(path).etag
+    return self._blob_properties(path).properties.etag
 
   def _status(self, path):
     """For internal use only; no backwards-compatibility guarantees.
@@ -579,7 +578,8 @@ class BlobStorageIO(object):
 
     return results
 
-  @deprecated(since='2.45.0', current='list_files')
+  @retry.with_exponential_backoff(
+      retry_filter=retry.retry_on_beam_io_error_filter)
   def list_prefix(self, path, with_metadata=False):
     """Lists files matching the prefix.
 
@@ -592,28 +592,9 @@ class BlobStorageIO(object):
       If ``with_metadata`` is False: dict of file name -> size; if
         ``with_metadata`` is True: dict of file name -> tuple(size, timestamp).
     """
-    file_info = {}
-    for file_metadata in self.list_files(path, with_metadata):
-      file_info[file_metadata[0]] = file_metadata[1]
-
-    return file_info
-
-  def list_files(self, path, with_metadata=False):
-    """Lists files matching the prefix.
-
-    Args:
-      path: Azure Blob Storage file path pattern in the form
-            azfs://<storage-account>/<container>/[name].
-      with_metadata: Experimental. Specify whether returns file metadata.
-
-    Returns:
-      If ``with_metadata`` is False: generator of tuple(file name, size); if
-      ``with_metadata`` is True: generator of
-      tuple(file name, tuple(size, timestamp)).
-    """
     storage_account, container, blob = parse_azfs_path(
         path, blob_optional=True, get_account=True)
-    file_info = set()
+    file_info = {}
     counter = 0
     start_time = time.time()
 
@@ -623,14 +604,15 @@ class BlobStorageIO(object):
       logging.debug("Starting the size estimation of the input")
     container_client = self.client.get_container_client(container)
 
-    response = retry.with_exponential_backoff(
-        retry_filter=retry.retry_on_beam_io_error_filter)(
-            container_client.list_blobs)(
-                name_starts_with=blob)
-    for item in response:
-      file_name = "azfs://%s/%s/%s" % (storage_account, container, item.name)
-      if file_name not in file_info:
-        file_info.add(file_name)
+    while True:
+      response = container_client.list_blobs(name_starts_with=blob)
+      for item in response:
+        file_name = "azfs://%s/%s/%s" % (storage_account, container, item.name)
+        if with_metadata:
+          file_info[file_name] = (
+              item.size, self._updated_to_seconds(item.last_modified))
+        else:
+          file_info[file_name] = item.size
         counter += 1
         if counter % 10000 == 0:
           if with_metadata:
@@ -639,11 +621,7 @@ class BlobStorageIO(object):
                 len(file_info))
           else:
             logging.info("Finished computing size of: %s files", len(file_info))
-        if with_metadata:
-          yield file_name, (
-              item.size, self._updated_to_seconds(item.last_modified))
-        else:
-          yield file_name, item.size
+      break
 
     logging.log(
         # do not spam logs when list_prefix is likely used to check empty folder
@@ -651,6 +629,7 @@ class BlobStorageIO(object):
         "Finished listing %s files in %s seconds.",
         counter,
         time.time() - start_time)
+    return file_info
 
 
 class BlobStorageDownloader(Downloader):

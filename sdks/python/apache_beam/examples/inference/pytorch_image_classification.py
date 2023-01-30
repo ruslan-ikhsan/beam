@@ -108,7 +108,6 @@ def run(
     model_class=None,
     model_params=None,
     save_main_session=True,
-    device='CPU',
     test_pipeline=None) -> PipelineResult:
   """
   Args:
@@ -118,7 +117,6 @@ def run(
                   These will be used to instantiate the model object in the
                   RunInference API.
     save_main_session: Used for internal testing.
-    device: Device to be used on the Runner. Choices are (CPU, GPU).
     test_pipeline: Used for internal testing.
   """
   known_args, pipeline_args = parse_known_args(argv)
@@ -140,8 +138,7 @@ def run(
       PytorchModelHandlerTensorWithBatchSize(
           state_dict_path=known_args.model_state_dict_path,
           model_class=model_class,
-          model_params=model_params,
-          device=device))
+          model_params=model_params))
 
   pipeline = test_pipeline
   if not test_pipeline:

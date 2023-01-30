@@ -79,7 +79,7 @@ func TestRegisterCoder(t *testing.T) {
 	tests := []struct {
 		name     string
 		typ      reflect.Type
-		enc, dec any
+		enc, dec interface{}
 	}{{
 		name: "nonSatisfyingInterface",
 		typ:  msType, enc: aEnc, dec: aDec,
@@ -135,7 +135,7 @@ func TestRegisterCoder(t *testing.T) {
 }
 
 func TestLookupCustomCoder(t *testing.T) {
-	newCC := func(t *testing.T, name string, et reflect.Type, enc, dec any) *CustomCoder {
+	newCC := func(t *testing.T, name string, et reflect.Type, enc, dec interface{}) *CustomCoder {
 		t.Helper()
 		cc, err := NewCustomCoder(name, et, enc, dec)
 		if err != nil {

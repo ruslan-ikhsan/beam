@@ -16,11 +16,6 @@
 package builder
 
 import (
-	"fmt"
-	"path/filepath"
-	"strings"
-	"sync"
-
 	pb "beam.apache.org/playground/backend/internal/api/v1"
 	"beam.apache.org/playground/backend/internal/environment"
 	"beam.apache.org/playground/backend/internal/executors"
@@ -28,6 +23,10 @@ import (
 	"beam.apache.org/playground/backend/internal/preparers"
 	"beam.apache.org/playground/backend/internal/utils"
 	"beam.apache.org/playground/backend/internal/validators"
+	"fmt"
+	"path/filepath"
+	"strings"
+	"sync"
 )
 
 const (
@@ -50,9 +49,9 @@ func Validator(paths *fs_tool.LifeCyclePaths, sdkEnv *environment.BeamEnvs) (*ex
 }
 
 // Preparer return executor with set args for preparer
-func Preparer(paths *fs_tool.LifeCyclePaths, sdkEnv *environment.BeamEnvs, valResults *sync.Map, prepareParams map[string]string) (*executors.ExecutorBuilder, error) {
+func Preparer(paths *fs_tool.LifeCyclePaths, sdkEnv *environment.BeamEnvs, valResults *sync.Map) (*executors.ExecutorBuilder, error) {
 	sdk := sdkEnv.ApacheBeamSdk
-	prep, err := preparers.GetPreparers(sdk, paths.AbsoluteSourceFilePath, valResults, prepareParams)
+	prep, err := preparers.GetPreparers(sdk, paths.AbsoluteSourceFilePath, valResults)
 	if err != nil {
 		return nil, err
 	}

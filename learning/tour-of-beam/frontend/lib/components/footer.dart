@@ -16,8 +16,6 @@
  * limitations under the License.
  */
 
-import 'dart:async';
-
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:playground_components/playground_components.dart';
@@ -92,7 +90,7 @@ class _ReportIssueButton extends StatelessWidget {
     return TextButton(
       style: _linkButtonStyle,
       onPressed: () {
-        unawaited(launchUrl(Uri.parse(BeamLinks.reportIssue)));
+        launchUrl(Uri.parse(BeamLinks.reportIssue));
       },
       child: const Text('ui.reportIssue').tr(),
     );
@@ -107,7 +105,7 @@ class _PrivacyPolicyButton extends StatelessWidget {
     return TextButton(
       style: _linkButtonStyle,
       onPressed: () {
-        unawaited(launchUrl(Uri.parse(BeamLinks.privacyPolicy)));
+        launchUrl(Uri.parse(BeamLinks.privacyPolicy));
       },
       child: const Text('ui.privacyPolicy').tr(),
     );

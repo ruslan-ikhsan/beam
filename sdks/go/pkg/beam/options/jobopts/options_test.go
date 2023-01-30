@@ -119,7 +119,7 @@ func TestGetEnvironmentConfig(t *testing.T) {
 		},
 		{
 			"",
-			core.DefaultDockerImage,
+			"apache/beam_go_sdk:" + core.SdkVersion,
 		},
 	}
 	for _, test := range tests {

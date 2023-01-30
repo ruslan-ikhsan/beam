@@ -879,7 +879,7 @@ public class CalcRelSplitter {
           continue;
         }
         currentLevel = exprLevels[i];
-        @SuppressWarnings("argument")
+        @SuppressWarnings("argument.type.incompatible")
         final Void unused = exprs[i].accept(this);
       }
     }

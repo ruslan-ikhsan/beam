@@ -372,7 +372,7 @@ public class TypeDescriptors {
 
     // Get the actual supertype of the type being analyzed, hopefully with all type parameters
     // resolved, e.g. ProcessFunction<Integer, String>
-    TypeDescriptor<? super T> supertypeDescriptor = type.getSupertype(supertype);
+    TypeDescriptor supertypeDescriptor = type.getSupertype(supertype);
 
     // Substitute actual supertype into the extractor, e.g.
     // TypeVariableExtractor<ProcessFunction<Integer, String>, Integer>

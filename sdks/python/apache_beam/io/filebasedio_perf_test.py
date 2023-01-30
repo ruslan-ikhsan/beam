@@ -36,7 +36,6 @@ from apache_beam.testing.synthetic_pipeline import SyntheticSource
 from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import assert_that
 from apache_beam.testing.util import equal_to
-from apache_beam.transforms.util import Reshuffle
 
 WRITE_NAMESPACE = 'write'
 READ_NAMESPACE = 'read'
@@ -127,7 +126,6 @@ class _TextIOWritePerfTest(LoadTest):
             SyntheticSource(self.parse_synthetic_source_options()))
         | 'Count records' >> beam.ParDo(CountMessages(self.metrics_namespace))
         | 'Format' >> beam.ParDo(SyntheticRecordToStrFn())
-        | 'Avoid Fusion' >> Reshuffle()
         | 'Measure time' >> beam.ParDo(MeasureTime(self.metrics_namespace))
         | 'Write Text' >> WriteToText(
             file_path_prefix=FileSystems.join(self.output_folder, 'test'),

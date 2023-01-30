@@ -64,7 +64,6 @@ class ShortcutsModal extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(child: ShortcutRow(shortcut: shortcut)),
-                const SizedBox(width: kMdSpacing),
                 Expanded(
                   flex: 3,
                   child: Text(

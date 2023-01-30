@@ -29,7 +29,8 @@ import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.collect.ImmutableList;
 import org.apache.spark.sql.Dataset;
 
-class ImpulseTranslatorBatch extends TransformTranslator<PBegin, PCollection<byte[]>, Impulse> {
+public class ImpulseTranslatorBatch
+    extends TransformTranslator<PBegin, PCollection<byte[]>, Impulse> {
 
   @Override
   public void translate(Impulse transform, Context cxt) {

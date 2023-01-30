@@ -17,10 +17,10 @@
  */
 package org.apache.beam.runners.samza.translation;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.beam.runners.samza.SamzaPipelineOptions;
-import org.apache.beam.runners.samza.util.StoreIdGenerator;
 import org.apache.beam.sdk.runners.AppliedPTransform;
 import org.apache.beam.sdk.runners.TransformHierarchy;
 import org.apache.beam.sdk.transforms.PTransform;
@@ -35,13 +35,12 @@ public class ConfigContext {
   private final Map<PValue, String> idMap;
   private AppliedPTransform<?, ?, ?> currentTransform;
   private final SamzaPipelineOptions options;
-  private final StoreIdGenerator storeIdGenerator;
+  private final Set<String> stateIds;
 
-  public ConfigContext(
-      Map<PValue, String> idMap, Set<String> nonUniqueStateIds, SamzaPipelineOptions options) {
+  public ConfigContext(Map<PValue, String> idMap, SamzaPipelineOptions options) {
     this.idMap = idMap;
     this.options = options;
-    this.storeIdGenerator = new StoreIdGenerator(nonUniqueStateIds);
+    this.stateIds = new HashSet<>();
   }
 
   public void setCurrentTransform(AppliedPTransform<?, ?, ?> currentTransform) {
@@ -65,8 +64,8 @@ public class ConfigContext {
     return this.options;
   }
 
-  public StoreIdGenerator getStoreIdGenerator() {
-    return storeIdGenerator;
+  public boolean addStateId(String stateId) {
+    return stateIds.add(stateId);
   }
 
   private String getIdForPValue(PValue pvalue) {

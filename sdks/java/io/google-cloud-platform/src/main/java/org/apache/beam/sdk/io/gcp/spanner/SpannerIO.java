@@ -35,7 +35,6 @@ import com.google.auto.value.AutoValue;
 import com.google.cloud.ServiceFactory;
 import com.google.cloud.Timestamp;
 import com.google.cloud.spanner.AbortedException;
-import com.google.cloud.spanner.DatabaseClient;
 import com.google.cloud.spanner.DatabaseId;
 import com.google.cloud.spanner.Dialect;
 import com.google.cloud.spanner.ErrorCode;
@@ -1599,11 +1598,10 @@ public class SpannerIO {
               getMetadataInstance(), changeStreamDatabaseId.getInstanceId().getInstance());
       final String partitionMetadataDatabaseId =
           MoreObjects.firstNonNull(getMetadataDatabase(), changeStreamDatabaseId.getDatabase());
-      final DatabaseId fullPartitionMetadataDatabaseId =
-          DatabaseId.of(
-              getSpannerConfig().getProjectId().get(),
-              partitionMetadataInstanceId,
-              partitionMetadataDatabaseId);
+      final String partitionMetadataTableName =
+          MoreObjects.firstNonNull(
+              getMetadataTable(), generatePartitionMetadataTableName(partitionMetadataDatabaseId));
+
       SpannerConfig changeStreamSpannerConfig = getSpannerConfig();
       // Set default retryable errors for ReadChangeStream
       if (changeStreamSpannerConfig.getRetryableCodes() == null) {
@@ -1629,23 +1627,7 @@ public class SpannerIO {
               .toBuilder()
               .setInstanceId(StaticValueProvider.of(partitionMetadataInstanceId))
               .setDatabaseId(StaticValueProvider.of(partitionMetadataDatabaseId))
-              .setDatabaseRole(null)
               .build();
-      Dialect changeStreamDatabaseDialect = getDialect(changeStreamSpannerConfig);
-      Dialect metadataDatabaseDialect = getDialect(partitionMetadataSpannerConfig);
-      LOG.info(
-          "The Spanner database "
-              + changeStreamDatabaseId
-              + " has dialect "
-              + changeStreamDatabaseDialect);
-      LOG.info(
-          "The Spanner database "
-              + fullPartitionMetadataDatabaseId
-              + " has dialect "
-              + metadataDatabaseDialect);
-      final String partitionMetadataTableName =
-          MoreObjects.firstNonNull(
-              getMetadataTable(), generatePartitionMetadataTableName(partitionMetadataDatabaseId));
       final String changeStreamName = getChangeStreamName();
       final Timestamp startTimestamp = getInclusiveStartAt();
       // Uses (Timestamp.MAX - 1ns) at max for end timestamp, because we add 1ns to transform the
@@ -1654,7 +1636,7 @@ public class SpannerIO {
           getInclusiveEndAt().compareTo(MAX_INCLUSIVE_END_AT) > 0
               ? MAX_INCLUSIVE_END_AT
               : getInclusiveEndAt();
-      final MapperFactory mapperFactory = new MapperFactory(changeStreamDatabaseDialect);
+      final MapperFactory mapperFactory = new MapperFactory();
       final ChangeStreamMetrics metrics = new ChangeStreamMetrics();
       final RpcPriority rpcPriority = MoreObjects.firstNonNull(getRpcPriority(), RpcPriority.HIGH);
       final DaoFactory daoFactory =
@@ -1664,9 +1646,7 @@ public class SpannerIO {
               partitionMetadataSpannerConfig,
               partitionMetadataTableName,
               rpcPriority,
-              input.getPipeline().getOptions().getJobName(),
-              changeStreamDatabaseDialect,
-              metadataDatabaseDialect);
+              input.getPipeline().getOptions().getJobName());
       final ActionFactory actionFactory = new ActionFactory();
 
       final InitializeDoFn initializeDoFn =
@@ -1714,11 +1694,6 @@ public class SpannerIO {
           .apply(ParDo.of(new CleanUpReadChangeStreamDoFn(daoFactory)));
       return dataChangeRecordsOut;
     }
-  }
-
-  private static Dialect getDialect(SpannerConfig spannerConfig) {
-    DatabaseClient databaseClient = SpannerAccessor.getOrCreate(spannerConfig).getDatabaseClient();
-    return databaseClient.getDialect();
   }
 
   /**

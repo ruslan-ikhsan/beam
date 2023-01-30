@@ -21,9 +21,7 @@
 #   name: EarlyTriggers
 #   description: Task from katas to count events using early triggers
 #   multifile: true
-#   files:
-#     - name: generate_event.py
-#   context_line: 36
+#   context_line: 46
 #   categories:
 #     - Streaming
 #   complexity: MEDIUM

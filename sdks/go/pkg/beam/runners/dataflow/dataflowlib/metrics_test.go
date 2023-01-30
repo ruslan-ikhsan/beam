@@ -74,7 +74,7 @@ func TestFromMetricUpdates_Distributions(t *testing.T) {
 			Name:      "customDist",
 			Namespace: "customDoFn",
 		}}
-	distribution := map[string]any{
+	distribution := map[string]interface{}{
 		"count": 100.0,
 		"sum":   5.0,
 		"min":   -12.0,

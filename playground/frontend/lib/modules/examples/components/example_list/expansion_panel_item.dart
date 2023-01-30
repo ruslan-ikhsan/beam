@@ -17,24 +17,24 @@
  */
 
 import 'package:flutter/material.dart';
+import 'package:playground/constants/sizes.dart';
+import 'package:playground/modules/analytics/analytics_service.dart';
+import 'package:playground/modules/examples/components/example_list/example_item_actions.dart';
 import 'package:playground_components/playground_components.dart';
 import 'package:provider/provider.dart';
 
-import '../../../../constants/sizes.dart';
-import '../../../analytics/analytics_service.dart';
-import 'example_item_actions.dart';
-
-/// An [example] in the example dropdown.
 class ExpansionPanelItem extends StatelessWidget {
   final ExampleBase example;
-  final VoidCallback onSelected;
-  final ExampleBase? selectedExample;
+  final ExampleBase selectedExample;
+  final AnimationController animationController;
+  final OverlayEntry? dropdown;
 
   const ExpansionPanelItem({
     Key? key,
     required this.example,
-    required this.onSelected,
     required this.selectedExample,
+    required this.animationController,
+    required this.dropdown,
   }) : super(key: key);
 
   @override
@@ -47,7 +47,13 @@ class ExpansionPanelItem extends StatelessWidget {
             if (controller.selectedExample != example) {
               _closeDropdown(controller.exampleCache);
               AnalyticsService.get(context).trackSelectExample(example);
-              controller.setExampleBase(example);
+              final exampleWithInfo =
+                  await controller.exampleCache.loadExampleInfo(example);
+              // TODO: setCurrentSdk = false when we do
+              //  per-SDK output and run status.
+              //  Now using true to reset the output and run status.
+              //  https://github.com/apache/beam/issues/23248
+              controller.setExample(exampleWithInfo, setCurrentSdk: true);
             }
           },
           child: Container(
@@ -62,7 +68,7 @@ class ExpansionPanelItem extends StatelessWidget {
                   // Wrapped with Row for better user interaction and positioning
                   Text(
                     example.name,
-                    style: example.path == selectedExample?.path
+                    style: example.path == selectedExample.path
                         ? const TextStyle(fontWeight: FontWeight.bold)
                         : const TextStyle(),
                   ),
@@ -77,7 +83,8 @@ class ExpansionPanelItem extends StatelessWidget {
   }
 
   void _closeDropdown(ExampleCache exampleCache) {
-    exampleCache.setSelectorOpened(false);
-    onSelected();
+    animationController.reverse();
+    dropdown?.remove();
+    exampleCache.changeSelectorVisibility();
   }
 }

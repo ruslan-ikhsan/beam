@@ -17,11 +17,9 @@
  */
 
 import 'package:onmessage/onmessage.dart';
+import 'package:playground/modules/messages/handlers/abstract_message_handler.dart';
+import 'package:playground/modules/messages/parsers/messages_parser.dart';
 
-import '../handlers/abstract_message_handler.dart';
-import '../parsers/messages_parser.dart';
-
-/// A listener for JavaScript window messages.
 class MessagesListener {
   final AbstractMessageHandler handler;
 

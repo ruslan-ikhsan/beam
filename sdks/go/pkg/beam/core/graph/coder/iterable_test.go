@@ -40,7 +40,7 @@ func TestEncodeDecodeIterable(t *testing.T) {
 	}
 
 	tests := []struct {
-		v          any
+		v          interface{}
 		encElm     func(reflect.Value, io.Writer) error
 		decElm     func(reflect.Value, io.Reader) error
 		encoded    []byte

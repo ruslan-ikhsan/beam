@@ -108,13 +108,8 @@ func New(t reflect.Type, components ...FullType) FullType {
 	case Container:
 		switch t.Kind() {
 		case reflect.Slice:
-			if len(components) == 0 {
-				// For elements without sub components, we just create with the type, this handles vanilla slices.
-				// We include the child type as a component for convenience.
-				return &tree{class, t, []FullType{New(t.Elem())}}
-			}
-			// For elements which themselves have components, we need to go deeper.
-			return &tree{class, t, []FullType{New(t.Elem(), components[0].Components()...)}}
+			// We include the child type as a component for convenience.
+			return &tree{class, t, []FullType{New(t.Elem())}}
 		default:
 			panic(fmt.Sprintf("Unexpected aggregate type: %v", t))
 		}
@@ -122,10 +117,10 @@ func New(t reflect.Type, components ...FullType) FullType {
 		switch t {
 		case KVType:
 			if len(components) != 2 {
-				panic(fmt.Sprintf("Invalid number of components for KV: %v, %v", t, components))
+				panic("Invalid number of components for KV")
 			}
 			if isAnyNonKVComposite(components) {
-				panic(fmt.Sprintf("Invalid to nest composite composites inside KV: %v, %v", t, components))
+				panic("Invalid to nest composites inside KV")
 			}
 			return &tree{class, t, components}
 		case WindowedValueType:
@@ -138,10 +133,10 @@ func New(t reflect.Type, components ...FullType) FullType {
 			return &tree{class, t, components}
 		case CoGBKType:
 			if len(components) < 2 {
-				panic(fmt.Sprintf("Invalid number of components for CoGBK: %v", t))
+				panic("Invalid number of components for CoGBK")
 			}
 			if isAnyNonKVComposite(components) {
-				panic(fmt.Sprintf("Invalid to nest composites inside CoGBK: %v", t))
+				panic("Invalid to nest composites inside CoGBK")
 			}
 			return &tree{class, t, components}
 		case TimersType:
@@ -226,14 +221,15 @@ func NewCoGBK(components ...FullType) FullType {
 //
 // For example:
 //
-//	SA:  KV<int,int>    := KV<int,int>
-//	SA:  KV<int,X>      := KV<int,string>  // X bound to string by assignment
-//	SA:  KV<int,string> := KV<int,X>       // Assignable only if X is already bound to string
-//	SA:  KV<int,string> := KV<X,X>         // Not assignable under any binding
+//   SA:  KV<int,int>    := KV<int,int>
+//   SA:  KV<int,X>      := KV<int,string>  // X bound to string by assignment
+//   SA:  KV<int,string> := KV<int,X>       // Assignable only if X is already bound to string
+//   SA:  KV<int,string> := KV<X,X>         // Not assignable under any binding
 //
-//	Not SA:  KV<int,string> := KV<string,X>
-//	Not SA:  X              := KV<int,string>
-//	Not SA:  GBK(X,Y)       := KV<int,string>
+//   Not SA:  KV<int,string> := KV<string,X>
+//   Not SA:  X              := KV<int,string>
+//   Not SA:  GBK(X,Y)       := KV<int,string>
+//
 func IsStructurallyAssignable(from, to FullType) bool {
 	switch from.Class() {
 	case Concrete:
@@ -427,5 +423,6 @@ func checkTypesNotNil(list []FullType) {
 
 // NoFiringPane return PaneInfo assigned as NoFiringPane(0x0f)
 func NoFiringPane() PaneInfo {
-	return PaneInfo{IsFirst: true, IsLast: true, Timing: PaneUnknown}
+	pn := PaneInfo{IsFirst: true, IsLast: true, Timing: PaneUnknown}
+	return pn
 }

@@ -42,7 +42,7 @@ func (v *iter1[T]) Init() error {
 	return nil
 }
 
-func (v *iter1[T]) Value() any {
+func (v *iter1[T]) Value() interface{} {
 	return v.invoke
 }
 
@@ -82,7 +82,7 @@ func (v *iter2[T1, T2]) Init() error {
 	return nil
 }
 
-func (v *iter2[T1, T2]) Value() any {
+func (v *iter2[T1, T2]) Value() interface{} {
 	return v.invoke
 }
 

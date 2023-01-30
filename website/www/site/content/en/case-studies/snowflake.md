@@ -2,7 +2,7 @@
 title:  "Snowflake"
 icon: /images/logos/powered-by/snowflake.png
 hasNav: true
-hasLink: "/documentation/io/built-in/snowflake/"
+hasLink: "https://beam.apache.org/documentation/io/built-in/snowflake/"
 ---
 <!--
 Licensed under the Apache License, Version 2.0 (the "License");

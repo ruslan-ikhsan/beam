@@ -43,13 +43,13 @@ func (n *Impulse) StartBundle(ctx context.Context, id string, data exec.DataCont
 	return n.Out.StartBundle(ctx, id, data)
 }
 
-func (n *Impulse) Process(ctx context.Context) ([]*exec.Checkpoint, error) {
+func (n *Impulse) Process(ctx context.Context) error {
 	value := &exec.FullValue{
 		Windows:   window.SingleGlobalWindow,
 		Timestamp: mtime.Now(),
 		Elm:       n.Value,
 	}
-	return nil, n.Out.ProcessElement(ctx, value)
+	return n.Out.ProcessElement(ctx, value)
 }
 
 func (n *Impulse) FinishBundle(ctx context.Context) error {

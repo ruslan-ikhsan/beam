@@ -230,8 +230,8 @@ public class HadoopFormatIOIT {
       collectAndPublishMetrics(writeResult, readResult);
     }
     // Fail the test if pipeline failed.
-    assertNotEquals(PipelineResult.State.FAILED, writeState);
-    assertNotEquals(PipelineResult.State.FAILED, readState);
+    assertNotEquals(writeState, PipelineResult.State.FAILED);
+    assertNotEquals(readState, PipelineResult.State.FAILED);
   }
 
   private void collectAndPublishMetrics(PipelineResult writeResult, PipelineResult readResult) {

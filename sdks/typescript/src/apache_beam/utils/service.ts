@@ -216,7 +216,7 @@ export function serviceProviderFromJavaGradleTarget(
       }
     } else {
       jar = await JavaJarService.cachedJar(
-        await JavaJarService.gradleToJar(gradleTarget)
+        JavaJarService.gradleToJar(gradleTarget)
       );
     }
 
@@ -281,18 +281,18 @@ export class JavaJarService extends SubprocessService {
     }
   }
 
-  static async gradleToJar(
+  static gradleToJar(
     gradleTarget: string,
     appendix: string | undefined = undefined,
     version: string = beamVersion
-  ): Promise<string> {
+  ): string {
     if (version.startsWith("0.")) {
       // node-ts 0.x corresponds to Beam 2.x.
       version = "2" + version.substring(1);
     }
     const gradlePackage = gradleTarget.match(/^:?(.*):[^:]+:?$/)![1];
     const artifactId = "beam-" + gradlePackage.replaceAll(":", "-");
-    const projectRoot = getBeamProjectRoot();
+    const projectRoot = getProjectRoot();
     const localPath = !projectRoot
       ? undefined
       : path.join(
@@ -302,20 +302,16 @@ export class JavaJarService extends SubprocessService {
           "libs",
           JavaJarService.jarName(
             artifactId,
-            version.replace("-SNAPSHOT", ""),
+            version.replace(".dev", ""),
             "SNAPSHOT",
             appendix
           )
         );
 
-    if (version.includes("SNAPSHOT") && !projectRoot) {
-      version = "latest";
-    }
-
     if (localPath && fs.existsSync(localPath)) {
       console.info("Using pre-built snapshot at", localPath);
       return localPath;
-    } else if (version.includes("SNAPSHOT")) {
+    } else if (version.includes(".dev")) {
       throw new Error(
         `${localPath} not found. Please build the server with
       cd ${projectRoot}; ./gradlew ${gradleTarget})`
@@ -330,37 +326,14 @@ export class JavaJarService extends SubprocessService {
     }
   }
 
-  static async mavenJarUrl(
+  static mavenJarUrl(
     artifactId: string,
     version: string,
     classifier: string | undefined = undefined,
     appendix: string | undefined = undefined,
     repo: string = JavaJarService.APACHE_REPOSITORY,
     groupId: string = JavaJarService.BEAM_GROUP_ID
-  ): Promise<string> {
-    if (version == "latest") {
-      const medatadataUrl = [
-        repo,
-        groupId.replaceAll(".", "/"),
-        artifactId,
-        "maven-metadata.xml",
-      ].join("/");
-      const metadata = await new Promise<string>((resolve, reject) => {
-        let data = "";
-        https.get(medatadataUrl, (res) => {
-          res.on("data", (chunk) => {
-            data += chunk;
-          });
-          res.on("end", () => {
-            resolve(data);
-          });
-          res.on("error", (e) => {
-            reject(e);
-          });
-        });
-      });
-      version = metadata.match(/<latest>(.*)<\/latest>/)![1];
-    }
+  ): string {
     return [
       repo,
       groupId.replaceAll(".", "/"),
@@ -477,18 +450,9 @@ function serviceOverrideFor(name: string): string | undefined {
   }
 }
 
-function getBeamProjectRoot(): string | undefined {
+function getProjectRoot(): string | undefined {
   try {
-    const projectRoot = path.dirname(findGitRoot(__dirname));
-    if (
-      fs.existsSync(
-        path.join(projectRoot, "sdks", "typescript", "src", "apache_beam")
-      )
-    ) {
-      return projectRoot;
-    } else {
-      return undefined;
-    }
+    return path.dirname(findGitRoot(__dirname));
   } catch (Error) {
     return undefined;
   }

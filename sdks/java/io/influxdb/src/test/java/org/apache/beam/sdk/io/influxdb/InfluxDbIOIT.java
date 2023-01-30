@@ -28,15 +28,10 @@ import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Count;
 import org.apache.beam.sdk.transforms.Create;
-import org.apache.beam.sdk.util.BackOff;
-import org.apache.beam.sdk.util.BackOffUtils;
-import org.apache.beam.sdk.util.FluentBackoff;
-import org.apache.beam.sdk.util.Sleeper;
 import org.apache.beam.sdk.values.PCollection;
 import org.influxdb.InfluxDB;
 import org.influxdb.InfluxDB.ConsistencyLevel;
 import org.influxdb.InfluxDBFactory;
-import org.influxdb.InfluxDBIOException;
 import org.influxdb.dto.Query;
 import org.junit.After;
 import org.junit.Before;
@@ -95,28 +90,13 @@ public class InfluxDbIOIT {
   }
 
   @Before
-  public void initTest() throws IOException, InterruptedException {
-    BackOff backOff = FluentBackoff.DEFAULT.withMaxRetries(4).backoff();
-    Query createQuery = new Query(String.format("CREATE DATABASE %s", options.getDatabaseName()));
+  public void initTest() {
     try (InfluxDB connection =
         InfluxDBFactory.connect(
             options.getInfluxDBURL(),
             options.getInfluxDBUserName(),
             options.getInfluxDBPassword())) {
-      InfluxDBIOException lastException;
-      // retry create database
-      do {
-        try {
-          connection.query(createQuery);
-          lastException = null;
-          break;
-        } catch (InfluxDBIOException e) {
-          lastException = e;
-        }
-      } while (BackOffUtils.next(Sleeper.DEFAULT, backOff));
-      if (lastException != null) {
-        throw lastException;
-      }
+      connection.query(new Query(String.format("CREATE DATABASE %s", options.getDatabaseName())));
     }
   }
 

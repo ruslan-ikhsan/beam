@@ -107,7 +107,7 @@ func (fn *searchResourcesFn) searchResourcesPaginated(ctx context.Context, query
 	}
 
 	var bodyFields struct {
-		Entries []any                `json:"entry"`
+		Entries []interface{}        `json:"entry"`
 		Links   []responseLinkFields `json:"link"`
 	}
 	err = json.NewDecoder(strings.NewReader(body)).Decode(&bodyFields)
@@ -119,7 +119,7 @@ func (fn *searchResourcesFn) searchResourcesPaginated(ctx context.Context, query
 	return resourcesFoundInPage, extractNextPageTokenFrom(ctx, bodyFields.Links), nil
 }
 
-func mapEntryToString(ctx context.Context, entries []any) []string {
+func mapEntryToString(ctx context.Context, entries []interface{}) []string {
 	stringifiedEntries := make([]string, 0)
 	for _, entry := range entries {
 		entryBytes, err := json.Marshal(entry)

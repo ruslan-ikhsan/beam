@@ -16,11 +16,12 @@
 package exec
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"reflect"
 	"strings"
+
+	"bytes"
 
 	"github.com/apache/beam/sdks/v2/go/pkg/beam/core/graph/coder"
 	"github.com/apache/beam/sdks/v2/go/pkg/beam/core/graph/mtime"
@@ -44,7 +45,7 @@ type ElementEncoder interface {
 
 // EncodeElement is a convenience function for encoding a single element into a
 // byte slice.
-func EncodeElement(c ElementEncoder, val any) ([]byte, error) {
+func EncodeElement(c ElementEncoder, val interface{}) ([]byte, error) {
 	var buf bytes.Buffer
 	if err := c.Encode(&FullValue{Elm: val}, &buf); err != nil {
 		return nil, err
@@ -115,9 +116,6 @@ func MakeElementEncoder(c *coder.Coder) ElementEncoder {
 			fst: MakeElementEncoder(c.Components[0]),
 			snd: MakeElementEncoder(c.Components[1]),
 		}
-
-	case coder.IW:
-		return &intervalWindowValueEncoder{}
 
 	case coder.Window:
 		return &wrappedWindowEncoder{
@@ -230,9 +228,6 @@ func MakeElementDecoder(c *coder.Coder) ElementDecoder {
 			fst: MakeElementDecoder(c.Components[0]),
 			snd: MakeElementDecoder(c.Components[1]),
 		}
-
-	case coder.IW:
-		return &intervalWindowValueDecoder{}
 
 	// The following cases are not expected to be executed in the normal
 	// course of a pipeline, however including them here enables simpler
@@ -594,8 +589,7 @@ func (c *kvDecoder) DecodeTo(r io.Reader, fv *FullValue) error {
 // Elm will be the decoded type.
 //
 // Example:
-//
-//	KV<int, KV<...>> decodes to *FullValue{Elm: int, Elm2: *FullValue{...}}
+//   KV<int, KV<...>> decodes to *FullValue{Elm: int, Elm2: *FullValue{...}}
 func (c *kvDecoder) Decode(r io.Reader) (*FullValue, error) {
 	fv := &FullValue{}
 	if err := c.DecodeTo(r, fv); err != nil {
@@ -610,7 +604,7 @@ func (c *kvDecoder) Decode(r io.Reader) (*FullValue, error) {
 //
 // Technically drops window and timestamp info, so only use when those are
 // expected to be empty.
-func elideSingleElmFV(fv *FullValue) any {
+func elideSingleElmFV(fv *FullValue) interface{} {
 	if fv.Elm2 == nil {
 		return fv.Elm
 	}
@@ -619,7 +613,7 @@ func elideSingleElmFV(fv *FullValue) any {
 
 // convertIfNeeded reuses Wrapped KVs if needed, but accepts pointer
 // to a pre-allocated non-nil *FullValue for overwriting and use.
-func convertIfNeeded(v any, allocated *FullValue) *FullValue {
+func convertIfNeeded(v interface{}, allocated *FullValue) *FullValue {
 	if fv, ok := v.(*FullValue); ok {
 		return fv
 	} else if _, ok := v.(FullValue); ok {
@@ -953,7 +947,7 @@ func (d *paneDecoder) Decode(r io.Reader) (*FullValue, error) {
 }
 
 type rowEncoder struct {
-	enc func(any, io.Writer) error
+	enc func(interface{}, io.Writer) error
 }
 
 func (e *rowEncoder) Encode(val *FullValue, w io.Writer) error {
@@ -961,7 +955,7 @@ func (e *rowEncoder) Encode(val *FullValue, w io.Writer) error {
 }
 
 type rowDecoder struct {
-	dec func(r io.Reader) (any, error)
+	dec func(r io.Reader) (interface{}, error)
 }
 
 func (d *rowDecoder) DecodeTo(r io.Reader, fv *FullValue) error {
@@ -1184,36 +1178,6 @@ func (*intervalWindowDecoder) DecodeSingle(r io.Reader) (typex.Window, error) {
 		return nil, err
 	}
 	return window.IntervalWindow{Start: mtime.FromMilliseconds(end.Milliseconds() - int64(duration)), End: end}, nil
-}
-
-type intervalWindowValueEncoder struct {
-	intervalWindowEncoder
-}
-
-func (e *intervalWindowValueEncoder) Encode(v *FullValue, w io.Writer) error {
-	return e.EncodeSingle(v.Elm.(window.IntervalWindow), w)
-}
-
-type intervalWindowValueDecoder struct {
-	intervalWindowDecoder
-}
-
-func (d *intervalWindowValueDecoder) Decode(r io.Reader) (*FullValue, error) {
-	fv := &FullValue{}
-	err := d.DecodeTo(r, fv)
-	if err != nil {
-		return nil, err
-	}
-	return fv, nil
-}
-
-func (d *intervalWindowValueDecoder) DecodeTo(r io.Reader, value *FullValue) error {
-	w, err := d.DecodeSingle(r)
-	if err != nil {
-		return err
-	}
-	value.Elm = w
-	return nil
 }
 
 // EncodeWindowedValueHeader serializes a windowed value header.

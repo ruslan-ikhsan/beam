@@ -51,7 +51,7 @@ func (m foo) Do(context.Context, int, string) (string, int, error) {
 func TestNew(t *testing.T) {
 	tests := []struct {
 		Name  string
-		Fn    any
+		Fn    interface{}
 		Param []FnParamKind
 		Ret   []ReturnKind
 		Err   error

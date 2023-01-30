@@ -50,7 +50,7 @@ func TestEncodeDecodeNullable(t *testing.T) {
 	byteCtnrPtrDec := NullableDecoder(bytePtrDec)
 
 	tests := []struct {
-		decoded any
+		decoded interface{}
 		encoded []byte
 	}{
 		{

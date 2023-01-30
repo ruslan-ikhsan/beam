@@ -49,13 +49,13 @@ var (
 // T, U, V, W, X, Y, Z are universal types. They play the role of generic
 // type variables in UserFn signatures, but are limited to top-level positions.
 
-type T any
-type U any
-type V any
-type W any
-type X any
-type Y any
-type Z any
+type T interface{}
+type U interface{}
+type V interface{}
+type W interface{}
+type X interface{}
+type Y interface{}
+type Z interface{}
 
 // EventTime is a timestamp that Beam understands as attached to an element.
 type EventTime = mtime.Time
@@ -74,21 +74,15 @@ type BundleFinalization interface {
 	RegisterCallback(time.Duration, func() error)
 }
 
-// PaneTiming defines the pane timing in byte.
 type PaneTiming byte
 
 const (
-	// PaneEarly defines early pane timing.
-	PaneEarly PaneTiming = 0
-	// PaneOnTime defines on-time pane timing.
-	PaneOnTime PaneTiming = 1
-	// PaneLate defines late pane timing.
-	PaneLate PaneTiming = 2
-	// PaneUnknown defines unknown pane timing.
+	PaneEarly   PaneTiming = 0
+	PaneOnTime  PaneTiming = 1
+	PaneLate    PaneTiming = 2
 	PaneUnknown PaneTiming = 3
 )
 
-// PaneInfo represents the output pane.
 type PaneInfo struct {
 	Timing                     PaneTiming
 	IsFirst, IsLast            bool

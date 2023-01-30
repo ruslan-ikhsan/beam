@@ -23,7 +23,7 @@ import (
 func TestStore(t *testing.T) {
 	store := newStore()
 
-	m := make(map[Labels]any)
+	m := make(map[Labels]interface{})
 	e := &Extractor{
 		SumInt64: func(l Labels, v int64) {
 			m[l] = &counter{value: v}
@@ -51,7 +51,7 @@ func TestStore(t *testing.T) {
 		t.Fatalf("e.ExtractFrom(store) = %q, want nil", err)
 	}
 
-	expected := map[Labels]any{
+	expected := map[Labels]interface{}{
 		{transform: "pid", namespace: "ns", name: "counter"}:      &counter{value: 1},
 		{transform: "pid", namespace: "ns", name: "distribution"}: &distribution{count: 1, sum: 2, min: 3, max: 4},
 		{transform: "pid", namespace: "ns", name: "gauge"}:        &gauge{v: 1, t: now},

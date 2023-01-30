@@ -20,9 +20,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/widgets.dart';
 
 import '../controllers/playground_controller.dart';
-import '../models/toast.dart';
-import '../models/toast_type.dart';
-import '../playground_components.dart';
+import '../notifications/notification.dart';
 import 'run_button.dart';
 
 class RunOrCancelButton extends StatelessWidget {
@@ -42,28 +40,24 @@ class RunOrCancelButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return RunButton(
       playgroundController: playgroundController,
-      isEnabled: !(playgroundController.selectedExample?.isMultiFile ?? false),
-      cancelRun: () async {
+      disabled: playgroundController.selectedExample?.isMultiFile ?? false,
+      isRunning: playgroundController.isCodeRunning,
+      cancelRun: () {
         beforeCancel?.call();
-        await playgroundController.codeRunner.cancelRun().catchError(
-              (_) => PlaygroundComponents.toastNotifier.add(_getErrorToast()),
-            );
+        playgroundController.cancelRun().catchError(
+              (_) => NotificationManager.showError(
+            context,
+            'widgets.runOrCancelButton.notificationTitles.runCode'.tr(),
+            'widgets.runOrCancelButton.notificationTitles.cancelExecution'.tr(),
+          ),
+        );
       },
       runCode: () {
         beforeRun?.call();
-        playgroundController.codeRunner.runCode(
+        playgroundController.runCode(
           onFinish: onComplete,
         );
       },
-    );
-  }
-
-  Toast _getErrorToast() {
-    return Toast(
-      title: 'widgets.runOrCancelButton.notificationTitles.runCode'.tr(),
-      description:
-          'widgets.runOrCancelButton.notificationTitles.cancelExecution'.tr(),
-      type: ToastType.error,
     );
   }
 }

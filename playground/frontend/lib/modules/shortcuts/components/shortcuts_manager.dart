@@ -16,28 +16,36 @@
  * limitations under the License.
  */
 
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:playground_components/playground_components.dart';
 
-import '../constants/global_shortcuts.dart';
-
-class PlaygroundShortcutsManager extends StatelessWidget {
-  const PlaygroundShortcutsManager({
-    required this.child,
-    required this.playgroundController,
-  });
-
+class ShortcutsManager extends StatelessWidget {
   final Widget child;
-  final PlaygroundController playgroundController;
+  final List<BeamShortcut> shortcuts;
+
+  const ShortcutsManager({
+    Key? key,
+    required this.child,
+    required this.shortcuts,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return ShortcutsManager(
-      shortcuts: [
-        ...playgroundController.shortcuts,
-        ...globalShortcuts,
-      ],
+    return FocusableActionDetector(
+      autofocus: true,
+      shortcuts: _shortcutsMap,
+      actions: _getActions(context),
       child: child,
     );
   }
+
+  Map<LogicalKeySet, Intent> get _shortcutsMap => {
+        for (var shortcut in shortcuts)
+          shortcut.shortcuts: shortcut.actionIntent
+      };
+
+  Map<Type, Action<Intent>> _getActions(BuildContext context) => {
+        for (var shortcut in shortcuts)
+          shortcut.actionIntent.runtimeType: shortcut.createAction(context)
+      };
 }

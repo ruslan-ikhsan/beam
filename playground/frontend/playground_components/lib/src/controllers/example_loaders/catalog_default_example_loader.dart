@@ -19,46 +19,29 @@
 import '../../cache/example_cache.dart';
 import '../../models/example.dart';
 import '../../models/example_loading_descriptors/catalog_default_example_loading_descriptor.dart';
-import '../../models/example_loading_descriptors/example_loading_descriptor.dart';
-import '../../models/example_loading_descriptors/standard_example_loading_descriptor.dart';
-import '../../models/sdk.dart';
 import 'example_loader.dart';
 
-/// The [ExampleLoader] for [CatalogDefaultExampleLoadingDescriptor].
-///
-/// Loads the default example for the [sdk].
 class CatalogDefaultExampleLoader extends ExampleLoader {
-  @override
-  ExampleLoadingDescriptor get descriptor =>
-      _standardDescriptor ?? _defaultDescriptor;
-
-  final CatalogDefaultExampleLoadingDescriptor _defaultDescriptor;
-  StandardExampleLoadingDescriptor? _standardDescriptor;
-
+  final CatalogDefaultExampleLoadingDescriptor descriptor;
   final ExampleCache exampleCache;
 
-  CatalogDefaultExampleLoader({
-    required CatalogDefaultExampleLoadingDescriptor descriptor,
+  const CatalogDefaultExampleLoader({
+    required this.descriptor,
     required this.exampleCache,
-  }) : _defaultDescriptor = descriptor;
-
-  @override
-  Sdk get sdk => _defaultDescriptor.sdk;
+  });
 
   @override
   Future<Example> get future async {
-    final result =
-        await exampleCache.getDefaultExampleBySdk(_defaultDescriptor.sdk);
+    if (!exampleCache.hasCatalog) {
+      throw Exception('Default example requires a catalog in ExampleState');
+    }
+
+    await exampleCache.loadDefaultExamplesIfNot();
+    final result = exampleCache.defaultExamplesBySdk[descriptor.sdk];
 
     if (result == null) {
       throw Exception('Default example not found for $descriptor');
     }
-
-    _standardDescriptor = StandardExampleLoadingDescriptor(
-      path: result.path,
-      sdk: result.sdk,
-      viewOptions: _defaultDescriptor.viewOptions,
-    );
 
     return result;
   }

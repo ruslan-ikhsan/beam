@@ -18,12 +18,11 @@
 package org.apache.beam.runners.spark.structuredstreaming.translation.batch;
 
 import java.io.IOException;
-import java.util.function.Supplier;
+import org.apache.beam.runners.core.construction.SerializablePipelineOptions;
 import org.apache.beam.runners.core.construction.SplittableParDo;
 import org.apache.beam.runners.spark.structuredstreaming.io.BoundedDatasetFactory;
 import org.apache.beam.runners.spark.structuredstreaming.translation.TransformTranslator;
 import org.apache.beam.sdk.io.BoundedSource;
-import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.transforms.windowing.GlobalWindow;
 import org.apache.beam.sdk.util.WindowedValue;
 import org.apache.beam.sdk.values.PBegin;
@@ -43,7 +42,7 @@ class ReadSourceTranslatorBatch<T>
       throws IOException {
     SparkSession session = cxt.getSparkSession();
     BoundedSource<T> source = transform.getSource();
-    Supplier<PipelineOptions> options = cxt.getOptionsSupplier();
+    SerializablePipelineOptions options = cxt.getSerializableOptions();
 
     Encoder<WindowedValue<T>> encoder =
         cxt.windowedEncoder(source.getOutputCoder(), GlobalWindow.Coder.INSTANCE);

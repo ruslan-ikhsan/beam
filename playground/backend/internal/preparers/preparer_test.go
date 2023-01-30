@@ -1,15 +1,14 @@
 package preparers
 
 import (
+	pb "beam.apache.org/playground/backend/internal/api/v1"
+	"beam.apache.org/playground/backend/internal/logger"
+	"beam.apache.org/playground/backend/internal/validators"
 	"fmt"
 	"os"
 	"reflect"
 	"sync"
 	"testing"
-
-	pb "beam.apache.org/playground/backend/internal/api/v1"
-	"beam.apache.org/playground/backend/internal/logger"
-	"beam.apache.org/playground/backend/internal/validators"
 )
 
 const (
@@ -81,16 +80,14 @@ func teardown() {
 
 func TestGetPreparers(t *testing.T) {
 	filepath := ""
-	prepareParams := make(map[string]string)
 	validationResults := sync.Map{}
 	validationResults.Store(validators.UnitTestValidatorName, false)
 	validationResults.Store(validators.KatasValidatorName, false)
 
 	type args struct {
-		sdk           pb.Sdk
-		filepath      string
-		prepareParams map[string]string
-		valResults    *sync.Map
+		sdk        pb.Sdk
+		filepath   string
+		valResults *sync.Map
 	}
 	tests := []struct {
 		name    string
@@ -103,12 +100,11 @@ func TestGetPreparers(t *testing.T) {
 			// As a result, want to receive 3 preparers
 			name: "Get Java preparers",
 			args: args{
-				sdk:           pb.Sdk_SDK_JAVA,
-				filepath:      filepath,
-				prepareParams: prepareParams,
-				valResults:    &validationResults,
+				sdk:        pb.Sdk_SDK_JAVA,
+				filepath:   filepath,
+				valResults: &validationResults,
 			},
-			want: NewPreparersBuilder(filepath, prepareParams).
+			want: NewPreparersBuilder(filepath).
 				JavaPreparers().
 				WithPublicClassRemover().
 				WithPackageChanger().
@@ -122,12 +118,11 @@ func TestGetPreparers(t *testing.T) {
 			// As a result, want to receive 2 preparers
 			name: "Get Python Preparers",
 			args: args{
-				sdk:           pb.Sdk_SDK_PYTHON,
-				filepath:      filepath,
-				prepareParams: prepareParams,
-				valResults:    &validationResults,
+				sdk:        pb.Sdk_SDK_PYTHON,
+				filepath:   filepath,
+				valResults: &validationResults,
 			},
-			want: NewPreparersBuilder(filepath, prepareParams).
+			want: NewPreparersBuilder(filepath).
 				PythonPreparers().
 				WithLogHandler().
 				WithGraphHandler().
@@ -140,12 +135,11 @@ func TestGetPreparers(t *testing.T) {
 			// As a result, want to receive 1 preparer
 			name: "Get Go preparer",
 			args: args{
-				sdk:           pb.Sdk_SDK_GO,
-				filepath:      filepath,
-				prepareParams: prepareParams,
-				valResults:    &validationResults,
+				sdk:        pb.Sdk_SDK_GO,
+				filepath:   filepath,
+				valResults: &validationResults,
 			},
-			want: NewPreparersBuilder(filepath, prepareParams).
+			want: NewPreparersBuilder(filepath).
 				GoPreparers().
 				WithCodeFormatter().
 				Build().
@@ -157,12 +151,11 @@ func TestGetPreparers(t *testing.T) {
 			// As a result, want to receive 3 preparers
 			name: "Get Scio preparers",
 			args: args{
-				sdk:           pb.Sdk_SDK_SCIO,
-				filepath:      filepath,
-				prepareParams: prepareParams,
-				valResults:    &validationResults,
+				sdk:        pb.Sdk_SDK_SCIO,
+				filepath:   filepath,
+				valResults: &validationResults,
 			},
-			want: NewPreparersBuilder(filepath, prepareParams).
+			want: NewPreparersBuilder(filepath).
 				ScioPreparers().
 				WithPackageRemover().
 				WithImportRemover().
@@ -174,7 +167,7 @@ func TestGetPreparers(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetPreparers(tt.args.sdk, tt.args.filepath, tt.args.valResults, tt.args.prepareParams)
+			got, err := GetPreparers(tt.args.sdk, tt.args.filepath, tt.args.valResults)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetPreparers() error = %v, wantErr %v", err, tt.wantErr)
 				return

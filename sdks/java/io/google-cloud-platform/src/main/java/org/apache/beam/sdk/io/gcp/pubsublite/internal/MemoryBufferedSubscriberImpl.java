@@ -52,7 +52,7 @@ class MemoryBufferedSubscriberImpl extends ProxyService implements MemoryBuffere
 
   // onReceive will not be called inline as subscriber is not started.
   // addServices is intended to be called from the constructor.
-  @SuppressWarnings({"methodref.receiver.bound", "method.invocation"})
+  @SuppressWarnings({"methodref.receiver.bound.invalid", "method.invocation.invalid"})
   public MemoryBufferedSubscriberImpl(
       Partition partition,
       Offset startOffset,

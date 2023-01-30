@@ -59,7 +59,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Common transforms for Csv files. */
-@SuppressWarnings({"argument"})
+@SuppressWarnings({"argument.type.incompatible"})
 public class CsvConverters {
 
   /* Logger for class. */

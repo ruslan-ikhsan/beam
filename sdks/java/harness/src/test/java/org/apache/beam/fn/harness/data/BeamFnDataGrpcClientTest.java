@@ -39,7 +39,7 @@ import org.apache.beam.model.pipeline.v1.Endpoints;
 import org.apache.beam.sdk.coders.Coder;
 import org.apache.beam.sdk.coders.LengthPrefixCoder;
 import org.apache.beam.sdk.coders.StringUtf8Coder;
-import org.apache.beam.sdk.fn.data.BeamFnDataInboundObserver;
+import org.apache.beam.sdk.fn.data.BeamFnDataInboundObserver2;
 import org.apache.beam.sdk.fn.data.BeamFnDataOutboundAggregator;
 import org.apache.beam.sdk.fn.data.DataEndpoint;
 import org.apache.beam.sdk.fn.data.FnDataReceiver;
@@ -169,12 +169,12 @@ public class BeamFnDataGrpcClientTest {
               (Endpoints.ApiServiceDescriptor descriptor) -> channel,
               OutboundObserverFactory.trivial());
 
-      BeamFnDataInboundObserver observerA =
-          BeamFnDataInboundObserver.forConsumers(
+      BeamFnDataInboundObserver2 observerA =
+          BeamFnDataInboundObserver2.forConsumers(
               Arrays.asList(DataEndpoint.create(TRANSFORM_ID_A, CODER, inboundValuesA::add)),
               Collections.emptyList());
-      BeamFnDataInboundObserver observerB =
-          BeamFnDataInboundObserver.forConsumers(
+      BeamFnDataInboundObserver2 observerB =
+          BeamFnDataInboundObserver2.forConsumers(
               Arrays.asList(DataEndpoint.create(TRANSFORM_ID_B, CODER, inboundValuesB::add)),
               Collections.emptyList());
 
@@ -245,8 +245,8 @@ public class BeamFnDataGrpcClientTest {
               (Endpoints.ApiServiceDescriptor descriptor) -> channel,
               OutboundObserverFactory.trivial());
 
-      BeamFnDataInboundObserver observer =
-          BeamFnDataInboundObserver.forConsumers(
+      BeamFnDataInboundObserver2 observer =
+          BeamFnDataInboundObserver2.forConsumers(
               Arrays.asList(
                   DataEndpoint.create(
                       TRANSFORM_ID_A,

@@ -30,6 +30,9 @@ import org.apache.beam.runners.core.construction.SplittableParDo;
 import org.apache.beam.runners.core.construction.TransformInputs;
 import org.apache.beam.runners.core.construction.graph.ProjectionPushdownOptimizer;
 import org.apache.beam.runners.core.metrics.MetricsPusher;
+import org.apache.beam.runners.spark.aggregators.AggregatorsAccumulator;
+import org.apache.beam.runners.spark.metrics.AggregatorMetricSource;
+import org.apache.beam.runners.spark.metrics.CompositeSource;
 import org.apache.beam.runners.spark.metrics.MetricsAccumulator;
 import org.apache.beam.runners.spark.metrics.SparkBeamMetricSource;
 import org.apache.beam.runners.spark.translation.EvaluationContext;
@@ -177,6 +180,9 @@ public final class SparkRunner extends PipelineRunner<SparkPipelineResult> {
       // Checkpoint aggregator/metrics values
       jssc.addStreamingListener(
           new JavaStreamingListenerWrapper(
+              new AggregatorsAccumulator.AccumulatorCheckpointingSparkListener()));
+      jssc.addStreamingListener(
+          new JavaStreamingListenerWrapper(
               new MetricsAccumulator.AccumulatorCheckpointingSparkListener()));
 
       // register user-defined listeners.
@@ -246,16 +252,24 @@ public final class SparkRunner extends PipelineRunner<SparkPipelineResult> {
 
   private void registerMetricsSource(String appName) {
     final MetricsSystem metricsSystem = SparkEnv$.MODULE$.get().metricsSystem();
-    final SparkBeamMetricSource metricsSource = new SparkBeamMetricSource(appName + ".Beam");
+    final AggregatorMetricSource aggregatorMetricSource =
+        new AggregatorMetricSource(null, AggregatorsAccumulator.getInstance().value());
+    final SparkBeamMetricSource metricsSource = new SparkBeamMetricSource(null);
+    final CompositeSource compositeSource =
+        new CompositeSource(
+            appName + ".Beam",
+            metricsSource.metricRegistry(),
+            aggregatorMetricSource.metricRegistry());
     // re-register the metrics in case of context re-use
-    metricsSystem.removeSource(metricsSource);
-    metricsSystem.registerSource(metricsSource);
+    metricsSystem.removeSource(compositeSource);
+    metricsSystem.registerSource(compositeSource);
   }
 
   /** Init Metrics/Aggregators accumulators. This method is idempotent. */
   public static void initAccumulators(SparkPipelineOptions opts, JavaSparkContext jsc) {
     // Init metrics accumulators
     MetricsAccumulator.init(opts, jsc);
+    AggregatorsAccumulator.init(opts, jsc);
   }
 
   /** Visit the pipeline to determine the translation mode (batch/streaming). */

@@ -18,7 +18,6 @@
 -->
 # Playground deployment on GCP
 This guide shows you how to deploy full Playground environment on Google Cloud Platform (GCP) environment.
-Alternatively, you can automate Playground environment deployment with Cloud Build as described in [readme](infrastructure/cloudbuild-manual-setup/README.md).
 
 ## Prerequisites:
 
@@ -68,10 +67,6 @@ gke_name             = "playground-backend"  #Playground GKE Cluster name
 region               = "us-east1"            #Set the deployment region
 location             = "us-east1-b"          #Select the deployment location from available in the specified region
 state_bucket         = "bucket_name"         #GCS bucket name for Beam Playground temp files
-redis_name           = "playground_redis"    #Choose the name for redis instance
-min_count            = 2                     #Min node count for GKE cluster
-max_count            = 6                     #Max node count for GKE cluster
-
 ```
 * `state.tfbackend` environment variables:
 ```
@@ -116,9 +111,9 @@ gcloud container clusters get-credentials --region `chosen_location` `gke_name` 
 ```
 Start the following command from the top level repository folder ("beam") to deploy the Payground infrastructure:
 ```
-./gradlew playground:terraform:gkebackend -Pproject_environment="environment_name" -Pdocker-tag="tag" -Pdns-name="playground.zone" -Psdk-tag=2.43.0
+./gradlew playground:terraform:gkebackend -Pproject_environment="environment_name" -Pdocker-tag="tag" -Pdns-name="playground.zone"
 ```
-Where tag - image tag for backend, playground.zone - chosen DNS for Playground, Psdk-tag - current BEAM version
+Where tag - image tag for backend, playground.zone - chosen DNS for Playground
 
 During script execution, a Google managed certificate will be created. [Provisioning might take up to 60 minutes](https://cloud.google.com/load-balancing/docs/ssl-certificates/google-managed-certs).
 

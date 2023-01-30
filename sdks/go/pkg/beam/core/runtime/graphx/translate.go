@@ -19,9 +19,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"strings"
 
-	"github.com/apache/beam/sdks/v2/go/pkg/beam/core"
 	"github.com/apache/beam/sdks/v2/go/pkg/beam/core/graph"
 	"github.com/apache/beam/sdks/v2/go/pkg/beam/core/graph/coder"
 	"github.com/apache/beam/sdks/v2/go/pkg/beam/core/graph/window"
@@ -46,7 +44,6 @@ const (
 	URNReshuffle     = "beam:transform:reshuffle:v1"
 	URNCombinePerKey = "beam:transform:combine_per_key:v1"
 	URNWindow        = "beam:transform:window_into:v1"
-	URNMapWindows    = "beam:transform:map_windows:v1"
 
 	URNIterableSideInput = "beam:side_input:iterable:v1"
 	URNMultimapSideInput = "beam:side_input:multimap:v1"
@@ -84,18 +81,14 @@ const (
 	URNArtifactURLType      = "beam:artifact:type:url:v1"
 	URNArtifactGoWorkerRole = "beam:artifact:role:go_worker_binary:v1"
 
-	// Environment URNs.
+	// Environment Urns.
 	URNEnvProcess  = "beam:env:process:v1"
 	URNEnvExternal = "beam:env:external:v1"
 	URNEnvDocker   = "beam:env:docker:v1"
 
-	// Userstate URNs.
+	// Userstate Urns.
 	URNBagUserState      = "beam:user_state:bag:v1"
 	URNMultiMapUserState = "beam:user_state:multimap:v1"
-
-	// Base version URNs are to allow runners to make distinctions between different releases
-	// in a way that won't change based on actual releases, in particular for FnAPI behaviors.
-	URNBaseVersionGo = "beam:version:sdk_base:go:" + core.DefaultDockerImage
 )
 
 func goCapabilities() []string {
@@ -105,7 +98,8 @@ func goCapabilities() []string {
 		URNTruncate,
 		URNWorkerStatus,
 		URNMonitoringInfoShortID,
-		URNBaseVersionGo,
+		// TOOD(https://github.com/apache/beam/issues/20287): Make this versioned.
+		"beam:version:sdk_base:go",
 	}
 	return append(capabilities, knownStandardCoders()...)
 }
@@ -690,20 +684,6 @@ func (m *marshaller) expandCrossLanguage(namedEdge NamedEdge) (string, error) {
 		Spec:          spec,
 		Inputs:        inputs,
 		EnvironmentId: m.addDefaultEnv(),
-	}
-
-	// Add the coders for output in the marshaller even if expanded is nil
-	// for output coder field in expansion request.
-	// We need this specifically for Python External Transforms.
-	names := strings.Split(spec.Urn, ":")
-	if len(names) > 2 && names[2] == "python" {
-		for _, out := range edge.Output {
-			id, err := m.coders.Add(out.To.Coder)
-			if err != nil {
-				return "", errors.Wrapf(err, "failed to add output coder to coder registry: %v", m.coders)
-			}
-			out.To.Coder.ID = id
-		}
 	}
 
 	if edge.External.Expanded != nil {

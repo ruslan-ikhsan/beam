@@ -35,7 +35,6 @@ from apache_beam import pvalue
 from apache_beam.typehints import Any
 from apache_beam.typehints import row_type
 from apache_beam.typehints import typehints
-from apache_beam.utils import python_callable
 
 
 class TypeInferenceError(ValueError):
@@ -315,10 +314,6 @@ def infer_return_type(c, input_types, debug=False, depth=5):
           isinstance(input_types[1], Const)):
       from apache_beam.typehints import opcodes
       return opcodes._getattr(input_types[0], input_types[1].value)
-    elif isinstance(c, python_callable.PythonCallableWithSource):
-      # TODO(BEAM-24755): This can be removed once support for
-      # inference across *args and **kwargs is implemented.
-      return infer_return_type(c._callable, input_types, debug, depth)
     else:
       return Any
   except TypeInferenceError:
@@ -444,8 +439,8 @@ def infer_return_type_func(f, input_types, debug=False, depth=0):
         else:
           return_type = Any
       elif opname == 'CALL_FUNCTION_KW':
-        # TODO(BEAM-24755): Handle keyword arguments. Requires passing them by
-        #   name to infer_return_type.
+        # TODO(udim): Handle keyword arguments. Requires passing them by name
+        #   to infer_return_type.
         pop_count = arg + 2
         if isinstance(state.stack[-pop_count], Const):
           from apache_beam.pvalue import Row
@@ -467,7 +462,7 @@ def infer_return_type_func(f, input_types, debug=False, depth=0):
         has_kwargs = arg & 1  # type: int
         pop_count = has_kwargs + 2
         if has_kwargs:
-          # TODO(BEAM-24755): Unimplemented. Requires same functionality as a
+          # TODO(udim): Unimplemented. Requires same functionality as a
           #   CALL_FUNCTION_KW implementation.
           return_type = Any
         else:

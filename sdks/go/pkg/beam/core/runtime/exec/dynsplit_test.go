@@ -44,7 +44,7 @@ func TestDynamicSplit(t *testing.T) {
 		name string
 		// driver is a function determining how the processing and splitting
 		// threads are created and coordinated.
-		driver func(context.Context, *Plan, DataContext, *splitTestSdf) (splitResult, error)
+		driver func(*Plan, DataContext, *splitTestSdf) (splitResult, error)
 	}{
 		{
 			// Complete a split before beginning processing.
@@ -81,7 +81,7 @@ func TestDynamicSplit(t *testing.T) {
 			dc := DataContext{Data: &TestDataManager{R: pr}}
 
 			// Call driver to coordinate processing & splitting threads.
-			splitRes, procRes := test.driver(context.Background(), plan, dc, sdf)
+			splitRes, procRes := test.driver(plan, dc, sdf)
 
 			// Validate we get a valid split result, aside from split elements.
 			if splitRes.err != nil {
@@ -141,7 +141,7 @@ func TestDynamicSplit(t *testing.T) {
 
 // nonBlockingDriver performs a split before starting processing, so no thread
 // is forced to wait on a mutex.
-func nonBlockingDriver(ctx context.Context, plan *Plan, dc DataContext, sdf *splitTestSdf) (splitRes splitResult, procRes error) {
+func nonBlockingDriver(plan *Plan, dc DataContext, sdf *splitTestSdf) (splitRes splitResult, procRes error) {
 	// Begin processing pipeline.
 	procResCh := make(chan error)
 	go processPlan(plan, dc, procResCh)
@@ -149,7 +149,7 @@ func nonBlockingDriver(ctx context.Context, plan *Plan, dc DataContext, sdf *spl
 
 	// Complete a split before unblocking processing.
 	splitResCh := make(chan splitResult)
-	go splitPlan(ctx, plan, splitResCh)
+	go splitPlan(plan, splitResCh)
 	<-rt.split
 	<-rt.blockSplit
 	splitRes = <-splitResCh
@@ -166,7 +166,7 @@ func nonBlockingDriver(ctx context.Context, plan *Plan, dc DataContext, sdf *spl
 
 // splitBlockingDriver blocks on a split request so that the SDF attempts to
 // claim while the split is occurring.
-func splitBlockingDriver(ctx context.Context, plan *Plan, dc DataContext, sdf *splitTestSdf) (splitRes splitResult, procRes error) {
+func splitBlockingDriver(plan *Plan, dc DataContext, sdf *splitTestSdf) (splitRes splitResult, procRes error) {
 	// Begin processing pipeline.
 	procResCh := make(chan error)
 	go processPlan(plan, dc, procResCh)
@@ -174,7 +174,7 @@ func splitBlockingDriver(ctx context.Context, plan *Plan, dc DataContext, sdf *s
 
 	// Start a split, but block on it so it holds the mutex.
 	splitResCh := make(chan splitResult)
-	go splitPlan(ctx, plan, splitResCh)
+	go splitPlan(plan, splitResCh)
 	<-rt.split
 
 	// Start processing and start a claim, that'll be waiting for the mutex.
@@ -195,7 +195,7 @@ func splitBlockingDriver(ctx context.Context, plan *Plan, dc DataContext, sdf *s
 
 // claimBlockingDriver blocks on a claim request so that the SDF attempts to
 // split while the claim is occurring.
-func claimBlockingDriver(ctx context.Context, plan *Plan, dc DataContext, sdf *splitTestSdf) (splitRes splitResult, procRes error) {
+func claimBlockingDriver(plan *Plan, dc DataContext, sdf *splitTestSdf) (splitRes splitResult, procRes error) {
 	// Begin processing pipeline.
 	procResCh := make(chan error)
 	go processPlan(plan, dc, procResCh)
@@ -207,7 +207,7 @@ func claimBlockingDriver(ctx context.Context, plan *Plan, dc DataContext, sdf *s
 
 	// Start a split that'll be waiting for the mutex.
 	splitResCh := make(chan splitResult)
-	go splitPlan(ctx, plan, splitResCh)
+	go splitPlan(plan, splitResCh)
 	<-rt.split
 
 	// Unblock the claim, freeing the mutex (but not finishing processing yet).
@@ -333,8 +333,8 @@ type splitResult struct {
 
 // splitPlan is meant to be the goroutine representing the thread handling a
 // split request for the SDF.
-func splitPlan(ctx context.Context, plan *Plan, result chan splitResult) {
-	split, err := plan.Split(ctx, SplitPoints{Frac: 0.5, BufSize: 1})
+func splitPlan(plan *Plan, result chan splitResult) {
+	split, err := plan.Split(SplitPoints{Frac: 0.5, BufSize: 1})
 	result <- splitResult{split: split, err: err}
 }
 
@@ -370,7 +370,7 @@ func newSplitTestRTracker(rest offsetrange.Restriction) *splitTestRTracker {
 	}
 }
 
-func (rt *splitTestRTracker) TryClaim(pos any) bool {
+func (rt *splitTestRTracker) TryClaim(pos interface{}) bool {
 	i := pos.(int64)
 	if i == rt.blockInd {
 		rt.claim <- struct{}{}
@@ -395,7 +395,7 @@ func (rt *splitTestRTracker) GetError() error {
 	return rt.rt.GetError()
 }
 
-func (rt *splitTestRTracker) TrySplit(fraction float64) (any, any, error) {
+func (rt *splitTestRTracker) TrySplit(fraction float64) (interface{}, interface{}, error) {
 	rt.mu.Lock()
 	defer rt.mu.Unlock()
 	rt.blockSplit <- struct{}{}
@@ -418,7 +418,7 @@ func (rt *splitTestRTracker) IsDone() bool {
 	return rt.rt.IsDone()
 }
 
-func (rt *splitTestRTracker) GetRestriction() any {
+func (rt *splitTestRTracker) GetRestriction() interface{} {
 	rt.mu.Lock()
 	defer rt.mu.Unlock()
 	return rt.rt.GetRestriction()

@@ -234,8 +234,7 @@ class _CoGBKImpl(PTransform):
     for pcoll in pcolls.values():
       self._check_pcollection(pcoll)
       if self.pipeline:
-        assert pcoll.pipeline == self.pipeline, (
-            'All input PCollections must belong to the same pipeline.')
+        assert pcoll.pipeline == self.pipeline
 
     tags = list(pcolls.keys())
 
@@ -833,7 +832,6 @@ class Reshuffle(PTransform):
 
 
 def fn_takes_side_inputs(fn):
-  fn = getattr(fn, '_argspec_fn', fn)
   try:
     signature = get_signature(fn)
   except TypeError:

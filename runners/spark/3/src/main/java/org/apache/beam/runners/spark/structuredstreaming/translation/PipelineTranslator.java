@@ -23,23 +23,19 @@ import static org.apache.beam.sdk.util.Preconditions.checkStateNotNull;
 import static org.apache.beam.sdk.values.PCollection.IsBounded.UNBOUNDED;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import org.apache.beam.runners.core.construction.PTransformTranslation;
 import org.apache.beam.runners.core.construction.SerializablePipelineOptions;
 import org.apache.beam.runners.spark.SparkCommonPipelineOptions;
-import org.apache.beam.runners.spark.structuredstreaming.translation.batch.functions.SideInputValues;
 import org.apache.beam.runners.spark.structuredstreaming.translation.helpers.EncoderProvider;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.Pipeline.PipelineVisitor;
 import org.apache.beam.sdk.annotations.Internal;
 import org.apache.beam.sdk.coders.Coder;
-import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.StreamingOptions;
 import org.apache.beam.sdk.runners.AppliedPTransform;
 import org.apache.beam.sdk.runners.TransformHierarchy.Node;
@@ -51,15 +47,13 @@ import org.apache.beam.sdk.values.PInput;
 import org.apache.beam.sdk.values.POutput;
 import org.apache.beam.sdk.values.PValue;
 import org.apache.beam.sdk.values.TupleTag;
-import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Encoder;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder;
 import org.apache.spark.storage.StorageLevel;
-import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.reflect.ClassTag;
 
 /**
  * The pipeline translator translates a Beam {@link Pipeline} into a Spark correspondence, that can
@@ -129,8 +123,7 @@ public abstract class PipelineTranslator {
    */
   private static final class TranslationResult<T> implements EvaluationContext.NamedDataset<T> {
     private final String name;
-    private @MonotonicNonNull Dataset<WindowedValue<T>> dataset = null;
-    private @MonotonicNonNull Broadcast<SideInputValues<T>> sideInputBroadcast = null;
+    private @Nullable Dataset<WindowedValue<T>> dataset = null;
     private final Set<PTransform<?, ?>> dependentTransforms = new HashSet<>();
 
     private TranslationResult(PCollection<?> pCol) {
@@ -149,10 +142,8 @@ public abstract class PipelineTranslator {
   }
 
   /** Shared, mutable state during the translation of a pipeline and omitted afterwards. */
-  public interface TranslationState extends EncoderProvider {
+  interface TranslationState extends EncoderProvider {
     <T> Dataset<WindowedValue<T>> getDataset(PCollection<T> pCollection);
-
-    boolean isLeave(PCollection<?> pCollection);
 
     <T> void putDataset(
         PCollection<T> pCollection, Dataset<WindowedValue<T>> dataset, boolean cache);
@@ -161,12 +152,7 @@ public abstract class PipelineTranslator {
       putDataset(pCollection, dataset, true);
     }
 
-    <T> Broadcast<SideInputValues<T>> getSideInputBroadcast(
-        PCollection<T> pCollection, SideInputValues.Loader<T> loader);
-
-    Supplier<PipelineOptions> getOptionsSupplier();
-
-    PipelineOptions getOptions();
+    SerializablePipelineOptions getSerializableOptions();
 
     SparkSession getSparkSession();
   }
@@ -183,10 +169,9 @@ public abstract class PipelineTranslator {
    */
   private class TranslatingVisitor extends PTransformVisitor implements TranslationState {
     private final Map<PCollection<?>, TranslationResult<?>> translationResults;
-    private final Map<Coder<?>, Encoder<?>> encoders;
+    private final Map<Coder<?>, ExpressionEncoder<?>> encoders;
     private final SparkSession sparkSession;
-    private final PipelineOptions options;
-    private final Supplier<PipelineOptions> optionsSupplier;
+    private final SerializablePipelineOptions serializableOptions;
     private final StorageLevel storageLevel;
 
     private final Set<TranslationResult<?>> leaves;
@@ -197,8 +182,7 @@ public abstract class PipelineTranslator {
         Map<PCollection<?>, TranslationResult<?>> translationResults) {
       this.sparkSession = sparkSession;
       this.translationResults = translationResults;
-      this.options = options;
-      this.optionsSupplier = new BroadcastOptions(sparkSession, options);
+      this.serializableOptions = new SerializablePipelineOptions(options);
       this.storageLevel = StorageLevel.fromString(options.getStorageLevel());
       this.encoders = new HashMap<>();
       this.leaves = new HashSet<>();
@@ -225,13 +209,7 @@ public abstract class PipelineTranslator {
 
     @Override
     public <T> Encoder<T> encoderOf(Coder<T> coder, Factory<T> factory) {
-      // computeIfAbsent fails with Java 11 on recursive factory
-      Encoder<T> enc = (Encoder<T>) encoders.get(coder);
-      if (enc == null) {
-        enc = factory.apply(coder);
-        encoders.put(coder, enc);
-      }
-      return enc;
+      return (Encoder<T>) encoders.computeIfAbsent(coder, (Factory) factory);
     }
 
     private <T> TranslationResult<T> getResult(PCollection<T> pCollection) {
@@ -259,56 +237,14 @@ public abstract class PipelineTranslator {
     }
 
     @Override
-    public boolean isLeave(PCollection<?> pCollection) {
-      return getResult(pCollection).dependentTransforms.isEmpty();
-    }
-
-    @Override
-    public <T> Broadcast<SideInputValues<T>> getSideInputBroadcast(
-        PCollection<T> pCollection, SideInputValues.Loader<T> loader) {
-      TranslationResult<T> result = getResult(pCollection);
-      if (result.sideInputBroadcast == null) {
-        SideInputValues<T> sideInputValues = loader.apply(checkStateNotNull(result.dataset));
-        result.sideInputBroadcast = broadcast(sparkSession, sideInputValues);
-      }
-      return result.sideInputBroadcast;
-    }
-
-    @Override
-    public Supplier<PipelineOptions> getOptionsSupplier() {
-      return optionsSupplier;
-    }
-
-    @Override
-    public PipelineOptions getOptions() {
-      return options;
+    public SerializablePipelineOptions getSerializableOptions() {
+      return serializableOptions;
     }
 
     @Override
     public SparkSession getSparkSession() {
       return sparkSession;
     }
-  }
-
-  /**
-   * Supplier wrapping broadcasted {@link PipelineOptions} to avoid repeatedly serializing those as
-   * part of the task closures.
-   */
-  private static class BroadcastOptions implements Supplier<PipelineOptions>, Serializable {
-    private final Broadcast<SerializablePipelineOptions> broadcast;
-
-    private BroadcastOptions(SparkSession session, PipelineOptions options) {
-      this.broadcast = broadcast(session, new SerializablePipelineOptions(options));
-    }
-
-    @Override
-    public PipelineOptions get() {
-      return broadcast.value().get();
-    }
-  }
-
-  private static <T> Broadcast<T> broadcast(SparkSession session, T t) {
-    return session.sparkContext().broadcast(t, (ClassTag) ClassTag.AnyRef());
   }
 
   /**

@@ -20,9 +20,7 @@
 #   name: WindowAccumulationMode
 #   description: Task from katas to count events using ACCUMULATING as accumulation mode
 #   multifile: true
-#   files:
-#    - name: generate_event.py
-#   context_line: 36
+#   context_line: 51
 #   categories:
 #     - Streaming
 #   complexity: ADVANCED

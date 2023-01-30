@@ -17,11 +17,10 @@
  */
 
 import 'package:flutter/material.dart';
-
-import '../../constants/font_weight.dart';
-import '../../constants/fonts.dart';
-import '../../constants/sizes.dart';
-import '../../src/assets/assets.gen.dart';
+import 'package:playground/constants/assets.dart';
+import 'package:playground/constants/font_weight.dart';
+import 'package:playground/constants/fonts.dart';
+import 'package:playground/constants/sizes.dart';
 
 const double kTitleFontSize = 18;
 
@@ -34,8 +33,8 @@ class Logo extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Image(
-          image: AssetImage(Assets.beamLg.path),
+        const Image(
+          image: AssetImage(kBeamLgIconAsset),
           width: kIconSizeLg,
           height: kIconSizeLg,
         ),

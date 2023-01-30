@@ -77,7 +77,7 @@ spec:
     spec:
       containers:
       - name: datanode
-        image: gcr.io/apache-beam-testing/kubernetes-hadoop:3.3.4
+        image: szewi/kubernetes-hadoop:2.7.1
         imagePullPolicy: Always
         env:
           - name: NODE_TYPE
@@ -108,7 +108,7 @@ spec:
   hostname: namenode-0
   subdomain: hadoop-namenodes
   containers:
-  - image: gcr.io/apache-beam-testing/kubernetes-hadoop:3.3.4
+  - image: szewi/kubernetes-hadoop:2.7.1
     imagePullPolicy: Always
     name: namenode
     env:

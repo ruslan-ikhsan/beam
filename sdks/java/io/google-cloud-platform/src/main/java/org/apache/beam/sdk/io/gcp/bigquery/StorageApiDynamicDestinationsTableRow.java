@@ -37,7 +37,6 @@ public class StorageApiDynamicDestinationsTableRow<T, DestinationT extends @NonN
   private final SerializableFunction<T, TableRow> formatFunction;
   private final CreateDisposition createDisposition;
   private final boolean ignoreUnknownValues;
-  private final boolean autoSchemaUpdates;
   private static final TableSchemaCache SCHEMA_CACHE =
       new TableSchemaCache(Duration.standardSeconds(1));
 
@@ -49,13 +48,11 @@ public class StorageApiDynamicDestinationsTableRow<T, DestinationT extends @NonN
       DynamicDestinations<T, DestinationT> inner,
       SerializableFunction<T, TableRow> formatFunction,
       CreateDisposition createDisposition,
-      boolean ignoreUnknownValues,
-      boolean autoSchemaUpdates) {
+      boolean ignoreUnknownValues) {
     super(inner);
     this.formatFunction = formatFunction;
     this.createDisposition = createDisposition;
     this.ignoreUnknownValues = ignoreUnknownValues;
-    this.autoSchemaUpdates = autoSchemaUpdates;
   }
 
   static void clearSchemaCache() throws ExecutionException, InterruptedException {
@@ -118,11 +115,9 @@ public class StorageApiDynamicDestinationsTableRow<T, DestinationT extends @NonN
       this.protoTableSchema = TableRowToStorageApiProto.schemaToProtoTableSchema(tableSchema);
       schemaInformation =
           TableRowToStorageApiProto.SchemaInformation.fromTableSchema(protoTableSchema);
-      // If autoSchemaUpdates == true, then generate a descriptor where all the fields are optional.
-      // This allows us to support field relaxation downstream.
       descriptor =
           TableRowToStorageApiProto.getDescriptorFromTableSchema(
-              Preconditions.checkStateNotNull(tableSchema), !autoSchemaUpdates);
+              Preconditions.checkStateNotNull(tableSchema), true);
     }
 
     @Override
@@ -140,23 +135,12 @@ public class StorageApiDynamicDestinationsTableRow<T, DestinationT extends @NonN
       return toMessage(formatFunction.apply(element), true);
     }
 
-    @Override
     public StorageApiWritePayload toMessage(TableRow tableRow, boolean respectRequired)
         throws Exception {
-      // If autoSchemaUpdates==true, then we allow unknown values at this step and insert them into
-      // the unknownFields variable. This allows us to handle schema updates in the write stage.
-      boolean ignoreUnknown = ignoreUnknownValues || autoSchemaUpdates;
-      @Nullable TableRow unknownFields = autoSchemaUpdates ? new TableRow() : null;
-      boolean allowMissingFields = autoSchemaUpdates;
       Message msg =
           TableRowToStorageApiProto.messageFromTableRow(
-              schemaInformation,
-              descriptor,
-              tableRow,
-              ignoreUnknown,
-              allowMissingFields,
-              unknownFields);
-      return StorageApiWritePayload.of(msg.toByteArray(), unknownFields);
+              schemaInformation, descriptor, tableRow, ignoreUnknownValues);
+      return StorageApiWritePayload.of(msg.toByteArray());
     }
   };
 }

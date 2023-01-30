@@ -28,7 +28,7 @@ import (
 var (
 	// Resolver is the accessible symbol resolver the runtime uses to find functions.
 	Resolver SymbolResolver
-	cache    = make(map[string]any)
+	cache    = make(map[string]interface{})
 	mu       sync.Mutex
 )
 
@@ -73,7 +73,7 @@ type SymbolResolver interface {
 // and is needed for functions -- such as custom coders -- serialized during unit
 // tests, where the underlying symbol table is not available. It should be called
 // in `init()` only.
-func RegisterFunction(fn any) {
+func RegisterFunction(fn interface{}) {
 	if initialized {
 		panic("Init hooks have already run. Register function during init() instead.")
 	}
@@ -85,7 +85,7 @@ func RegisterFunction(fn any) {
 
 // ResolveFunction resolves the runtime value of a given function by symbol name
 // and type.
-func ResolveFunction(name string, t reflect.Type) (any, error) {
+func ResolveFunction(name string, t reflect.Type) (interface{}, error) {
 	mu.Lock()
 	defer mu.Unlock()
 

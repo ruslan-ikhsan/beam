@@ -22,42 +22,42 @@ import 'package:playground_components/playground_components.dart';
 import '../../components/scaffold.dart';
 import '../../constants/sizes.dart';
 import 'state.dart';
+import 'widgets/content.dart';
 import 'widgets/content_tree.dart';
 import 'widgets/playground_demo.dart';
-import 'widgets/unit_content.dart';
 
 class TourScreen extends StatelessWidget {
-  final TourNotifier tourNotifier;
+  final TourNotifier notifier;
 
-  const TourScreen(this.tourNotifier);
+  const TourScreen(this.notifier);
 
   @override
   Widget build(BuildContext context) {
     return TobScaffold(
       child: MediaQuery.of(context).size.width > ScreenBreakpoints.twoColumns
-          ? _WideTour(tourNotifier)
-          : _NarrowTour(tourNotifier),
+          ? _WideTour(notifier)
+          : _NarrowTour(notifier),
     );
   }
 }
 
 class _WideTour extends StatelessWidget {
-  final TourNotifier tourNotifier;
+  final TourNotifier notifier;
 
-  const _WideTour(this.tourNotifier);
+  const _WideTour(this.notifier);
 
   @override
   Widget build(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ContentTreeWidget(controller: tourNotifier.contentTreeController),
+        ContentTreeWidget(controller: notifier.contentTreeController),
         Expanded(
           child: SplitView(
             direction: Axis.horizontal,
-            first: UnitContentWidget(tourNotifier),
+            first: ContentWidget(notifier),
             second: PlaygroundDemoWidget(
-              playgroundController: tourNotifier.playgroundController,
+              playgroundController: notifier.playgroundController,
             ),
           ),
         ),
@@ -67,9 +67,9 @@ class _WideTour extends StatelessWidget {
 }
 
 class _NarrowTour extends StatelessWidget {
-  final TourNotifier tourNotifier;
+  final TourNotifier notifier;
 
-  const _NarrowTour(this.tourNotifier);
+  const _NarrowTour(this.notifier);
 
   @override
   Widget build(BuildContext context) {
@@ -79,8 +79,8 @@ class _NarrowTour extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ContentTreeWidget(controller: tourNotifier.contentTreeController),
-              Expanded(child: UnitContentWidget(tourNotifier)),
+              ContentTreeWidget(controller: notifier.contentTreeController),
+              Expanded(child: ContentWidget(notifier)),
             ],
           ),
           DecoratedBox(

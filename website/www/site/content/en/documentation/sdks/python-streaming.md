@@ -127,11 +127,11 @@ python -m apache_beam.examples.streaming_wordcount \
 {{< /runner >}}
 
 {{< runner flink >}}
-See /documentation/runners/flink/ for more information.
+See https://beam.apache.org/documentation/runners/flink/ for more information.
 {{< /runner >}}
 
 {{< runner spark >}}
-See /documentation/runners/spark/ for more information.
+See https://beam.apache.org/documentation/runners/spark/ for more information.
 {{< /runner >}}
 
 {{< runner dataflow >}}

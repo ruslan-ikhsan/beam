@@ -1,6 +1,6 @@
 {
   "name": "apache-beam",
-  "version": "2.45.0-SNAPSHOT",
+  "version": "0.38.0",
   "devDependencies": {
     "@google-cloud/bigquery": "^5.12.0",
     "@types/mocha": "^9.0.0",
@@ -53,8 +53,6 @@
   "main": "./dist/src/apache_beam/index.js",
   "exports": {
     ".": "./dist/src/apache_beam/index.js",
-    "./transforms": "./dist/src/apache_beam/transforms/index.js",
-    "./runners": "./dist/src/apache_beam/index.js",
-    "./*": "./dist/src/apache_beam/*.js"
+    "./": "./dist/src/apache_beam/"
   }
 }

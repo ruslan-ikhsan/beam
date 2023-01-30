@@ -31,9 +31,7 @@ job('beam_sonarqube_report') {
     }
   }
 
-
-  // TODO(https://github.com/apache/beam/issues/24768) remove or fix this job.
-  // commonJobProperties.setAutoJob delegate
+  commonJobProperties.setAutoJob delegate
 
   publishers {
     archiveJunit('**/build/test-results/**/*.xml')

@@ -23,16 +23,13 @@ import (
 	"net/http"
 	"strings"
 
+	tob "beam.apache.org/learning/tour-of-beam/backend/internal"
 	"beam.apache.org/learning/tour-of-beam/backend/internal/storage"
 	firebase "firebase.google.com/go/v4"
 )
 
-// helper to extract uid from context
-// set by ParseAuthHeader middleware
-// panics if key is not found
-func getContextUid(r *http.Request) string {
-	return r.Context().Value(CONTEXT_KEY_UID).(string)
-}
+// HandleFunc enriched with sdk and authenticated user uid.
+type HandlerFuncAuthWithSdk func(w http.ResponseWriter, r *http.Request, sdk tob.Sdk, uid string)
 
 const BEARER_SCHEMA = "Bearer "
 
@@ -56,8 +53,8 @@ func MakeAuthorizer(ctx context.Context, repo storage.Iface) *Authorizer {
 }
 
 // middleware to parse authorization header, verify the ID token and extract uid.
-func (a *Authorizer) ParseAuthHeader(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (a *Authorizer) ParseAuthHeader(next HandlerFuncAuthWithSdk) HandlerFuncWithSdk {
+	return func(w http.ResponseWriter, r *http.Request, sdk tob.Sdk) {
 		ctx := r.Context()
 		header := r.Header.Get("authorization") // returns "" if no header
 		if !strings.HasPrefix(header, BEARER_SCHEMA) {
@@ -90,7 +87,6 @@ func (a *Authorizer) ParseAuthHeader(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		ctx = context.WithValue(ctx, CONTEXT_KEY_UID, uid)
-		next(w, r.WithContext(ctx))
+		next(w, r, sdk, uid)
 	}
 }

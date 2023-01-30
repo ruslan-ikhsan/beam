@@ -22,7 +22,7 @@ import (
 	"reflect"
 )
 
-func findSumFn(t reflect.Type) any {
+func findSumFn(t reflect.Type) interface{} {
 	switch t.String() {
 	case "int":
 		return sumIntFn

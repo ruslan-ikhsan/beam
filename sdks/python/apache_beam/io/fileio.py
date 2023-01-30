@@ -90,7 +90,6 @@ parameter can be anything, as long as elements can be grouped by it.
 
 import collections
 import logging
-import os
 import random
 import uuid
 from collections import namedtuple
@@ -668,46 +667,36 @@ class _MoveTempFilesIntoFinalDestinationFn(beam.DoFn):
 
   def process(self, element, w=beam.DoFn.WindowParam):
     destination = element[0]
-    # list of FileResult objects for temp files
-    temp_file_results = list(element[1])
-    # list of FileResult objects for final files
-    final_file_results = []
+    file_results = list(element[1])
 
-    for i, r in enumerate(temp_file_results):
+    for i, r in enumerate(file_results):
       # TODO(pabloem): Handle compression for files.
       final_file_name = self.file_naming_fn(
-          r.window, r.pane, i, len(temp_file_results), '', destination)
+          r.window, r.pane, i, len(file_results), '', destination)
 
-      final_file_results.append(
-          FileResult(
-              final_file_name,
-              i,
-              len(temp_file_results),
-              r.window,
-              r.pane,
-              destination))
+      _LOGGER.info(
+          'Moving temporary file %s to dir: %s as %s. Res: %s',
+          r.file_name,
+          self.path.get(),
+          final_file_name,
+          r)
 
-    move_from = [f.file_name for f in temp_file_results]
-    move_to = [f.file_name for f in final_file_results]
-    _LOGGER.info(
-        'Moving temporary files %s to dir: %s as %s',
-        map(os.path.basename, move_from),
-        self.path.get(),
-        move_to)
+      final_full_path = filesystems.FileSystems.join(
+          self.path.get(), final_file_name)
 
-    try:
-      filesystems.FileSystems.rename(
-          move_from,
-          [filesystems.FileSystems.join(self.path.get(), f) for f in move_to])
-    except BeamIOError:
-      # This error is not serious, because it may happen on a retry of the
-      # bundle. We simply log it.
-      _LOGGER.debug(
-          'Exception occurred during moving files: %s. This may be due to a'
-          ' bundle being retried.',
-          move_from)
+      # TODO(pabloem): Batch rename requests?
+      try:
+        filesystems.FileSystems.rename([r.file_name], [final_full_path])
+      except BeamIOError:
+        # This error is not serious, because it may happen on a retry of the
+        # bundle. We simply log it.
+        _LOGGER.debug(
+            'File %s failed to be copied. This may be due to a bundle'
+            ' being retried.',
+            r.file_name)
 
-    yield from final_file_results
+      yield FileResult(
+          final_file_name, i, len(file_results), r.window, r.pane, destination)
 
     _LOGGER.debug(
         'Checking orphaned temporary files for destination %s and window %s',

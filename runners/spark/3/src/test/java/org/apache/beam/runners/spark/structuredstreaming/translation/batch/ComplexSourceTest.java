@@ -25,8 +25,11 @@ import java.io.PrintStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.beam.runners.spark.structuredstreaming.SparkSessionRule;
+import org.apache.beam.runners.spark.structuredstreaming.SparkStructuredStreamingPipelineOptions;
+import org.apache.beam.runners.spark.structuredstreaming.SparkStructuredStreamingRunner;
 import org.apache.beam.sdk.io.TextIO;
+import org.apache.beam.sdk.options.PipelineOptions;
+import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.values.PCollection;
@@ -45,11 +48,15 @@ public class ComplexSourceTest implements Serializable {
   private static File file;
   private static List<String> lines = createLines(30);
 
-  @ClassRule public static final SparkSessionRule SESSION = new SparkSessionRule();
+  @Rule public transient TestPipeline pipeline = TestPipeline.fromOptions(testOptions());
 
-  @Rule
-  public transient TestPipeline pipeline =
-      TestPipeline.fromOptions(SESSION.createPipelineOptions());
+  private static PipelineOptions testOptions() {
+    SparkStructuredStreamingPipelineOptions options =
+        PipelineOptionsFactory.create().as(SparkStructuredStreamingPipelineOptions.class);
+    options.setRunner(SparkStructuredStreamingRunner.class);
+    options.setTestMode(true);
+    return options;
+  }
 
   @BeforeClass
   public static void beforeClass() throws IOException {

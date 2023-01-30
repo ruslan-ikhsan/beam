@@ -18,7 +18,6 @@
 package org.apache.beam.sdk.io.gcp.spanner.changestreams.dao;
 
 import com.google.cloud.spanner.DatabaseAdminClient;
-import com.google.cloud.spanner.Dialect;
 import com.google.cloud.spanner.Options.RpcPriority;
 import java.io.Serializable;
 import org.apache.beam.sdk.io.gcp.spanner.SpannerAccessor;
@@ -47,8 +46,6 @@ public class DaoFactory implements Serializable {
   private final String partitionMetadataTableName;
   private final RpcPriority rpcPriority;
   private final String jobName;
-  private final Dialect spannerChangeStreamDatabaseDialect;
-  private final Dialect metadataDatabaseDialect;
 
   /**
    * Constructs a {@link DaoFactory} with the configuration to be used for the underlying instances.
@@ -66,9 +63,7 @@ public class DaoFactory implements Serializable {
       SpannerConfig metadataSpannerConfig,
       String partitionMetadataTableName,
       RpcPriority rpcPriority,
-      String jobName,
-      Dialect spannerChangeStreamDatabaseDialect,
-      Dialect metadataDatabaseDialect) {
+      String jobName) {
     if (metadataSpannerConfig.getInstanceId() == null) {
       throw new IllegalArgumentException("Metadata instance can not be null");
     }
@@ -81,8 +76,6 @@ public class DaoFactory implements Serializable {
     this.partitionMetadataTableName = partitionMetadataTableName;
     this.rpcPriority = rpcPriority;
     this.jobName = jobName;
-    this.spannerChangeStreamDatabaseDialect = spannerChangeStreamDatabaseDialect;
-    this.metadataDatabaseDialect = metadataDatabaseDialect;
   }
 
   /**
@@ -102,8 +95,7 @@ public class DaoFactory implements Serializable {
               databaseAdminClient,
               metadataSpannerConfig.getInstanceId().get(),
               metadataSpannerConfig.getDatabaseId().get(),
-              partitionMetadataTableName,
-              this.metadataDatabaseDialect);
+              partitionMetadataTableName);
     }
     return partitionMetadataAdminDao;
   }
@@ -120,9 +112,7 @@ public class DaoFactory implements Serializable {
     if (partitionMetadataDaoInstance == null) {
       partitionMetadataDaoInstance =
           new PartitionMetadataDao(
-              this.partitionMetadataTableName,
-              spannerAccessor.getDatabaseClient(),
-              this.metadataDatabaseDialect);
+              this.partitionMetadataTableName, spannerAccessor.getDatabaseClient());
     }
     return partitionMetadataDaoInstance;
   }
@@ -139,11 +129,7 @@ public class DaoFactory implements Serializable {
     if (changeStreamDaoInstance == null) {
       changeStreamDaoInstance =
           new ChangeStreamDao(
-              this.changeStreamName,
-              spannerAccessor.getDatabaseClient(),
-              rpcPriority,
-              jobName,
-              this.spannerChangeStreamDatabaseDialect);
+              this.changeStreamName, spannerAccessor.getDatabaseClient(), rpcPriority, jobName);
     }
     return changeStreamDaoInstance;
   }
