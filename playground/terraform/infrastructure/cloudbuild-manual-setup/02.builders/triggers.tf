@@ -21,7 +21,6 @@ data "google_service_account" "cloudbuild_sa" {
 
 resource "google_cloudbuild_trigger" "playground_infrastructure" {
   name     = var.infra_trigger_name
-  location = var.region
   project  = var.project_id
 
   description = "Builds the base image and then runs cloud build config file to deploy Playground infrastructure"
@@ -36,7 +35,7 @@ resource "google_cloudbuild_trigger" "playground_infrastructure" {
 
   substitutions = {
     _PLAYGROUND_REGION : var.playground_region
-    _PLAYGROUND_LOCATION : var.playground_zone
+    _PLAYGROUND_ZONE : var.playground_zone
     _ENVIRONMENT_NAME : var.playground_environment_name
     _DNS_NAME : var.playground_dns_name
     _NETWORK_NAME : var.playground_network_name
@@ -51,7 +50,6 @@ resource "google_cloudbuild_trigger" "playground_infrastructure" {
 
 resource "google_cloudbuild_trigger" "playground_to_gke" {
   name     = var.gke_trigger_name
-  location = var.region
   project  = var.project_id
 
   description = "Builds the base image and then runs cloud build config file to deploy Playground to GKE"
@@ -66,7 +64,7 @@ resource "google_cloudbuild_trigger" "playground_to_gke" {
 
   substitutions = {
     _PLAYGROUND_REGION : var.playground_region
-    _PLAYGROUND_LOCATION : var.playground_zone
+    _PLAYGROUND_ZONE : var.playground_zone
     _ENVIRONMENT_NAME : var.playground_environment_name
     _DNS_NAME : var.playground_dns_name
     _NETWORK_NAME : var.playground_network_name
